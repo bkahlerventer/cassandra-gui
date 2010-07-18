@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,7 +58,44 @@ public class ColumnTreePane extends JPanel {
                     Cell c = (Cell) unit;
                     CellPropertiesDlg cpdlg = new CellPropertiesDlg(c.getName(), c.getValue());
                     cpdlg.setVisible(true);
+                    if (cpdlg.isCancel()) {
+                        return;
+                    }
+
+                    Key k = null;
+                    SColumn s = null;
+
+                    Unit parentUnit = c.getParent();
+                    if (parentUnit instanceof SColumn) {
+                        s = (SColumn) parentUnit;
+                        k = (Key) s.getParent();
+                    } else {
+                        k = (Key) parentUnit;
+                    }
+
+                    Date d = null;
+                    try {
+                        d = client.insertColumn(keyspace,
+                                                columnFamily,
+                                                k.getName(),
+                                                s == null ? null : s.getName(),
+                                                cpdlg.getName(),
+                                                cpdlg.getValue());
+                    } catch (Exception e) {
+                        JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+
+                    c.setName(cpdlg.getName());
+                    c.setValue(cpdlg.getValue());
+                    c.setDate(d);
+
+                    node.setUserObject(
+                            new DefaultMutableTreeNode(c.getName() + "=" + c.getValue() + ", " +
+                                                       DATE_FORMAT.format(c.getDate())));
+                    treeModel.nodeChanged(node);
                 }
+
                 break;
             case OPERATION_REMOVE:
                 int status = JOptionPane.showConfirmDialog(null,

@@ -203,6 +203,24 @@ public class Client {
         return client.get_count(keyspace, key, colParent, ConsistencyLevel.ONE);
     }
 
+    public Date insertColumn(String keyspace,
+                             String columnFamily,
+                             String key,
+                             String superColumn,
+                             String column,
+                             String value)
+            throws InvalidRequestException, UnavailableException, TimedOutException, TException {
+        ColumnPath colPath = new ColumnPath(columnFamily);
+        if (superColumn != null) {
+            colPath.setSuper_column(superColumn.getBytes());
+        }
+        colPath.setColumn(column.getBytes());
+        long timestamp = System.currentTimeMillis() * 1000;
+        client.insert(keyspace, key, colPath, value.getBytes(), timestamp, ConsistencyLevel.ONE);
+
+        return new Date(timestamp / 1000);
+    }
+
     public void removeKey(String keyspace, String columnFamily, String key)
             throws InvalidRequestException, UnavailableException, TimedOutException, TException {
         ColumnPath colPath = new ColumnPath(columnFamily);
