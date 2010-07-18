@@ -13,6 +13,7 @@ import javax.swing.Action;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
@@ -62,11 +63,22 @@ public class CellPropertiesDlg extends JDialog {
         }
     }
 
+    private class EnterAction implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            enterAction();
+        }
+    }
+
+    private JTextField nameText = new JTextField();
+    private JTextField valueText = new JTextField();
+    private boolean cancel = true;
+
     public CellPropertiesDlg(String name, String value){
-        final JTextField nameText = new JTextField(name);
-        final JTextField valueText = new JTextField(value);
+        nameText.setText(name);
         nameText.setEditable(false);
-        valueText.setEditable(false);
+        valueText.setText(value);
+        valueText.addActionListener(new EnterAction());
 
         JPanel propertiesPane = new JPanel(new GridLayout(2, 2));
         propertiesPane.add(new JLabel("name:"));
@@ -81,12 +93,21 @@ public class CellPropertiesDlg extends JDialog {
         ok.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                cancel = false;
+                setVisible(false);
+            }
+        });
+        JButton cancel = new JButton("Cancel");
+        cancel.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
                 setVisible(false);
             }
         });
 
         JPanel buttonPanel = new JPanel(new FlowLayout());
         buttonPanel.add(ok);
+        buttonPanel.add(cancel);
 
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(propertiesPane, BorderLayout.CENTER);
@@ -99,5 +120,34 @@ public class CellPropertiesDlg extends JDialog {
         setTitle("Properties");
         setLocationRelativeTo(null);
         setModal(true);
+    }
+
+    private void enterAction() {
+        if (nameText.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Enter name.");
+            nameText.requestFocus();
+            return;
+        }
+
+        if (valueText.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Enter value.");
+            valueText.requestFocus();
+            return;
+        }
+
+        setVisible(false);
+        cancel = false;
+    }
+
+    public boolean isCancel() {
+        return cancel;
+    }
+
+    public String getName() {
+        return nameText.getText();
+    }
+
+    public String getValue() {
+        return valueText.getText();
     }
 }
