@@ -47,11 +47,11 @@ public class CassandraGUI extends JFrame {
         final KeyspaceTreePanel keyspaceTreePanel = new KeyspaceTreePanel(dlg.getClient());
         keyspaceTreePanel.setcCallback(new SelectedColumnFamilyCallback() {
             @Override
-            public void callback(String keyspaceName,
-                                 String columnFamilyName,
-                                 String startKey,
-                                 String endKey,
-                                 int rows) {
+            public void rangeCallback(String keyspaceName,
+                                      String columnFamilyName,
+                                      String startKey,
+                                      String endKey,
+                                      int rows) {
                 columnTreePane.showRows(keyspaceName, columnFamilyName, startKey, endKey, rows);
             }
         });
