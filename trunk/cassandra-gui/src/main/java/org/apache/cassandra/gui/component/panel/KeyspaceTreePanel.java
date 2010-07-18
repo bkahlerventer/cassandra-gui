@@ -25,6 +25,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 
 import org.apache.cassandra.client.Client;
+import org.apache.cassandra.gui.component.dialog.KeyDlg;
 import org.apache.cassandra.gui.component.dialog.KeyRangeDlg;
 import org.apache.cassandra.gui.control.callback.PropertiesCallback;
 import org.apache.cassandra.gui.control.callback.RepaintCallback;
@@ -38,12 +39,17 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
     private class PopupAction extends AbstractAction {
         private static final long serialVersionUID = 4235052996425858520L;
 
+        public static final int OPERATION_ROWS = 1;
+        public static final int OPERATION_KEYRANGE = 2;
+        public static final int OPERATION_KEY = 3;
+
+        public static final int ROWS_1 = 1;
         public static final int ROWS_1000 = 1000;
 
-        private boolean keyRange;
+        private int operation;
 
-        public PopupAction(String name, boolean keyRange) {
-            this.keyRange = keyRange;
+        public PopupAction(String name, int operation) {
+            this.operation = operation;
             putValue(Action.NAME, name);
         }
 
@@ -54,25 +60,43 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                 return;
             }
 
-            String startKey = "";
-            String endKey = "";
+            switch (operation) {
+            case OPERATION_ROWS:
+            case OPERATION_KEYRANGE:
+                String startKey = "";
+                String endKey = "";
 
-            if (keyRange) {
-                KeyRangeDlg krd = new KeyRangeDlg();
-                krd.setVisible(true);
-                if (krd.isCancel()) {
+                if (operation == OPERATION_KEYRANGE) {
+                    KeyRangeDlg krd = new KeyRangeDlg();
+                    krd.setVisible(true);
+                    if (krd.isCancel()) {
+                        return;
+                    }
+
+                    startKey = krd.getStartKey();
+                    endKey = krd.getEndKey();
+                }
+
+                cCallback.rangeCallback(lastSelectedKeysapce,
+                                        lastSelectedColumnFamily,
+                                        startKey,
+                                        endKey,
+                                        ROWS_1000);
+                break;
+            case OPERATION_KEY:
+                KeyDlg kd = new KeyDlg();
+                kd.setVisible(true);
+                if (kd.isCancel()) {
                     return;
                 }
 
-                startKey = krd.getStartKey();
-                endKey = krd.getEndKey();
+                cCallback.rangeCallback(lastSelectedKeysapce,
+                                        lastSelectedColumnFamily,
+                                        kd.getkey(),
+                                        kd.getkey(),
+                                        ROWS_1);
+                break;
             }
-
-            cCallback.callback(lastSelectedKeysapce,
-                               lastSelectedColumnFamily,
-                               startKey,
-                               endKey,
-                               ROWS_1000);
         }
     }
 
@@ -94,8 +118,9 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                     lastSelectedColumnFamily = columnFamily;
 
                     JPopupMenu popup = new JPopupMenu();
-                    popup.add(new PopupAction("show 1000 rows", false));
-                    popup.add(new PopupAction("key range rows", true));
+                    popup.add(new PopupAction("show 1000 rows", PopupAction.OPERATION_ROWS));
+                    popup.add(new PopupAction("key range rows", PopupAction.OPERATION_KEYRANGE));
+                    popup.add(new PopupAction("get key", PopupAction.OPERATION_KEY));
                     popup.show(e.getComponent(), e.getX(), e.getY());
                 } else {
                     lastSelectedKeysapce = null;

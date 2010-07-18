@@ -257,10 +257,10 @@ public class Client {
         for (KeySlice keySlice : keySlices) {
             Key key = new Key(keySlice.getKey(), new TreeMap<String, SColumn>(), new TreeMap<String, Cell>());
 
-            for (ColumnOrSuperColumn columns : keySlice.getColumns()) {
-                key.setSuperColumn(columns.isSetSuper_column());
-                if (columns.isSetSuper_column()) {
-                    SuperColumn scol = columns.getSuper_column();
+            for (ColumnOrSuperColumn column : keySlice.getColumns()) {
+                key.setSuperColumn(column.isSetSuper_column());
+                if (column.isSetSuper_column()) {
+                    SuperColumn scol = column.getSuper_column();
                     SColumn s = new SColumn(key, new String(scol.getName(), "UTF8"), new TreeMap<String, Cell>());
                     for (Column col : scol.getColumns()) {
                         Cell c = new Cell(s,
@@ -272,7 +272,7 @@ public class Client {
 
                     key.getSColumns().put(s.getName(), s);
                 } else {
-                    Column col = columns.getColumn();
+                    Column col = column.getColumn();
                     Cell c = new Cell(key,
                                       new String(col.getName(), "UTF8"),
                                       new String(col.getValue(), "UTF8"),

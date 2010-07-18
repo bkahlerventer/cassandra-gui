@@ -200,50 +200,54 @@ public class ColumnTreePane extends JPanel {
         this.keyspace = keyspace;
         this.columnFamily = columnFamily;
 
+        try {
+            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            Map<String, Key> l =
+                client.listKeyAndValues(keyspace, columnFamily, startKey, endKey, rows);
+            showTree(l);
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+        } catch (Exception e) {
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+            JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void showTree(Map<String, Key> l) {
         DefaultMutableTreeNode columnFamilyNode = new DefaultMutableTreeNode(columnFamily);
         treeModel = new DefaultTreeModel(columnFamilyNode);
         tree = new JTree(treeModel);
         tree.setRootVisible(true);
         tree.addMouseListener(new MousePopup());
 
-        try {
-            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            Map<String, Key> l =
-                client.listKeyAndValues(keyspace, columnFamily, startKey, endKey, rows);
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-            for (String keyName : l.keySet()) {
-                Key k = l.get(keyName);
-                DefaultMutableTreeNode keyNode = new DefaultMutableTreeNode(k.getName());
-                columnFamilyNode.add(keyNode);
-                unitMap.put(keyNode, k);
-                if (k.isSuperColumn()) {
-                    for (String sName : k.getSColumns().keySet()) {
-                        SColumn sc = k.getSColumns().get(sName);
-                        DefaultMutableTreeNode scNode = new DefaultMutableTreeNode(sc.getName());
-                        keyNode.add(scNode);
-                        unitMap.put(scNode, sc);
-                        for (String cName : sc.getCells().keySet()) {
-                            Cell c = sc.getCells().get(cName);
-                            DefaultMutableTreeNode cellNode =
-                                new DefaultMutableTreeNode(c.getName() + "=" + c.getValue() + ", " + DATE_FORMAT.format(c.getDate()));
-                            scNode.add(cellNode);
-                            unitMap.put(cellNode, c);
-                        }
-                    }
-                } else {
-                    for (String cName : k.getCells().keySet()) {
-                        Cell c = k.getCells().get(cName);
+        for (String keyName : l.keySet()) {
+            Key k = l.get(keyName);
+            DefaultMutableTreeNode keyNode = new DefaultMutableTreeNode(k.getName());
+            columnFamilyNode.add(keyNode);
+            unitMap.put(keyNode, k);
+            if (k.isSuperColumn()) {
+                for (String sName : k.getSColumns().keySet()) {
+                    SColumn sc = k.getSColumns().get(sName);
+                    DefaultMutableTreeNode scNode = new DefaultMutableTreeNode(sc.getName());
+                    keyNode.add(scNode);
+                    unitMap.put(scNode, sc);
+                    for (String cName : sc.getCells().keySet()) {
+                        Cell c = sc.getCells().get(cName);
                         DefaultMutableTreeNode cellNode =
                             new DefaultMutableTreeNode(c.getName() + "=" + c.getValue() + ", " + DATE_FORMAT.format(c.getDate()));
-                        keyNode.add(cellNode);
+                        scNode.add(cellNode);
                         unitMap.put(cellNode, c);
                     }
                 }
+            } else {
+                for (String cName : k.getCells().keySet()) {
+                    Cell c = k.getCells().get(cName);
+                    DefaultMutableTreeNode cellNode =
+                        new DefaultMutableTreeNode(c.getName() + "=" + c.getValue() + ", " + DATE_FORMAT.format(c.getDate()));
+                    keyNode.add(cellNode);
+                    unitMap.put(cellNode, c);
+                }
             }
-        } catch (Exception e) {
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-            JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
-            e.printStackTrace();
         }
 
         scrollPane.getViewport().setView(tree);
