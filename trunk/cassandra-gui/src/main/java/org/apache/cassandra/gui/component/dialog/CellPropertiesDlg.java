@@ -7,6 +7,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -70,21 +72,75 @@ public class CellPropertiesDlg extends JDialog {
         }
     }
 
+    public static final int OPERATION_KEY_INSERT = 1;
+    public static final int OPERATION_KEY_SUPERCOLUMN_INSERT = 2;
+    public static final int OPERATION_SUPERCOLUMN_INSERT = 3;
+    public static final int OPERATION_CELL_INSERT = 4;
+    public static final int OPERATION_CELL_UPDATE = 5;
+
+    private static final String KEY = "key";
+    private static final String SUPER_COLUMN = "super column";
+    private static final String NAME = "name";
+    private static final String VAELU = "value";
+
+    private JTextField keyText = new JTextField();
+    private JTextField superColumnText = new JTextField();
     private JTextField nameText = new JTextField();
     private JTextField valueText = new JTextField();
     private boolean cancel = true;
 
-    public CellPropertiesDlg(String name, String value){
+    private Map<String, JTextField> textFieldMap = new HashMap<String, JTextField>();
+
+    public CellPropertiesDlg(int operation) {
+        this(operation, "", "");
+    }
+
+    public CellPropertiesDlg(int operation, String name, String value){
+        JPanel propertiesPane = null;
+        switch (operation) {
+        case OPERATION_KEY_INSERT:
+            propertiesPane = new JPanel(new GridLayout(3, 2));
+            propertiesPane.add(new JLabel(KEY + ": "));
+            propertiesPane.add(keyText);
+            textFieldMap.put(KEY, keyText);
+            break;
+        case OPERATION_KEY_SUPERCOLUMN_INSERT:
+            propertiesPane = new JPanel(new GridLayout(4, 2));
+            propertiesPane.add(new JLabel(KEY + ": "));
+            propertiesPane.add(keyText);
+            textFieldMap.put(KEY, keyText);
+
+            propertiesPane.add(new JLabel(SUPER_COLUMN + ": "));
+            propertiesPane.add(superColumnText);
+            textFieldMap.put(SUPER_COLUMN, superColumnText);
+            break;
+        case OPERATION_SUPERCOLUMN_INSERT:
+            propertiesPane = new JPanel(new GridLayout(3, 2));
+            propertiesPane.add(new JLabel(SUPER_COLUMN + ": "));
+            propertiesPane.add(superColumnText);
+            textFieldMap.put(SUPER_COLUMN, superColumnText);
+            break;
+        case OPERATION_CELL_INSERT:
+            nameText.addActionListener(new EnterAction());
+            propertiesPane = new JPanel(new GridLayout(2, 2));
+            break;
+        case OPERATION_CELL_UPDATE:
+            propertiesPane = new JPanel(new GridLayout(2, 2));
+            nameText.setEditable(false);
+            break;
+        }
+
         nameText.setText(name);
-        nameText.setEditable(false);
         valueText.setText(value);
         valueText.addActionListener(new EnterAction());
 
-        JPanel propertiesPane = new JPanel(new GridLayout(2, 2));
-        propertiesPane.add(new JLabel("name:"));
+        propertiesPane.add(new JLabel(NAME + ": "));
         propertiesPane.add(nameText);
-        propertiesPane.add(new JLabel("value:"));
+        textFieldMap.put(NAME, nameText);
+
+        propertiesPane.add(new JLabel(VAELU + ": "));
         propertiesPane.add(valueText);
+        textFieldMap.put(VAELU, valueText);
 
         nameText.addMouseListener(new MousePopup(nameText));
         valueText.addMouseListener(new MousePopup(valueText));
@@ -117,22 +173,19 @@ public class CellPropertiesDlg extends JDialog {
 
         pack();
         setModalityType(ModalityType.DOCUMENT_MODAL);
-        setTitle("Properties");
+        setTitle("properties");
         setLocationRelativeTo(null);
         setModal(true);
     }
 
     private void enterAction() {
-        if (nameText.getText().isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Enter name.");
-            nameText.requestFocus();
-            return;
-        }
-
-        if (valueText.getText().isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Enter value.");
-            valueText.requestFocus();
-            return;
+        for (String s : textFieldMap.keySet()) {
+            JTextField t = textFieldMap.get(s);
+            if (t.getText().isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Enter " + s);
+                t.requestFocus();
+                return;
+            }
         }
 
         setVisible(false);
@@ -141,6 +194,14 @@ public class CellPropertiesDlg extends JDialog {
 
     public boolean isCancel() {
         return cancel;
+    }
+
+    public String getKey() {
+        return keyText.getText();
+    }
+
+    public String getSuperColumn() {
+        return superColumnText.getText();
     }
 
     public String getName() {

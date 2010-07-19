@@ -2,16 +2,12 @@ package org.apache.cassandra.gui.component.panel;
 
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -23,8 +19,9 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
 import org.apache.cassandra.client.Client;
-import org.apache.cassandra.gui.component.dialog.CellPropertiesDlg;
+import org.apache.cassandra.gui.component.dialog.action.ColumnPopupAction;
 import org.apache.cassandra.gui.control.callback.RepaintCallback;
+import org.apache.cassandra.node.TreeNode;
 import org.apache.cassandra.unit.Cell;
 import org.apache.cassandra.unit.Key;
 import org.apache.cassandra.unit.SColumn;
@@ -32,144 +29,6 @@ import org.apache.cassandra.unit.Unit;
 
 public class ColumnTreePane extends JPanel {
     private static final long serialVersionUID = -4236268406209844637L;
-
-    private class PopupAction extends AbstractAction {
-        private static final long serialVersionUID = 4235052996425858520L;
-
-        public static final int OPERATION_PROPERTIES = 0;
-        public static final int OPERATION_REMOVE = 2;
-
-        private int operation;
-        private DefaultMutableTreeNode node;
-        private Unit unit;
-
-        public PopupAction(String name,int operation, DefaultMutableTreeNode node, Unit unit) {
-            this.operation = operation;
-            this.node = node;
-            this.unit = unit;
-            putValue(Action.NAME, name);
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent ae) {
-            switch (operation) {
-            case OPERATION_PROPERTIES:
-                if (unit instanceof Cell) {
-                    Cell c = (Cell) unit;
-                    CellPropertiesDlg cpdlg = new CellPropertiesDlg(c.getName(), c.getValue());
-                    cpdlg.setVisible(true);
-                    if (cpdlg.isCancel()) {
-                        return;
-                    }
-
-                    Key k = null;
-                    SColumn s = null;
-
-                    Unit parentUnit = c.getParent();
-                    if (parentUnit instanceof SColumn) {
-                        s = (SColumn) parentUnit;
-                        k = (Key) s.getParent();
-                    } else {
-                        k = (Key) parentUnit;
-                    }
-
-                    Date d = null;
-                    try {
-                        d = client.insertColumn(keyspace,
-                                                columnFamily,
-                                                k.getName(),
-                                                s == null ? null : s.getName(),
-                                                cpdlg.getName(),
-                                                cpdlg.getValue());
-                    } catch (Exception e) {
-                        JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
-                        e.printStackTrace();
-                    }
-
-                    c.setName(cpdlg.getName());
-                    c.setValue(cpdlg.getValue());
-                    c.setDate(d);
-
-                    node.setUserObject(
-                            new DefaultMutableTreeNode(c.getName() + "=" + c.getValue() + ", " +
-                                                       DATE_FORMAT.format(c.getDate())));
-                    treeModel.nodeChanged(node);
-                }
-
-                break;
-            case OPERATION_REMOVE:
-                int status = JOptionPane.showConfirmDialog(null,
-                                                           "Delete a column " + getName() + "?",
-                                                           "confirm",
-                                                           JOptionPane.YES_NO_OPTION,
-                                                           JOptionPane.QUESTION_MESSAGE);
-                if (status == JOptionPane.YES_OPTION) {
-                    try {
-                        if (unit instanceof Key) {
-                            Key k = (Key) unit;
-                            client.removeKey(keyspace, columnFamily, k.getName());
-
-                            node.removeAllChildren();
-                            treeModel.reload(node);
-                        } else if (unit instanceof SColumn) {
-                            SColumn s = (SColumn) unit;
-                            Key k = (Key) s.getParent();
-                            client.removeSuperColumn(keyspace, columnFamily, k.getName(), s.getName());
-                            k.getSColumns().remove(s.getName());
-
-                            removeNode((DefaultMutableTreeNode) node.getParent(), node);
-                        } else {
-                            Cell c = (Cell) unit;
-                            Unit parent = c.getParent();
-                            if (parent instanceof Key) {
-                                Key k = (Key) parent;
-                                client.removeColumn(keyspace, columnFamily, k.getName(), c.getName());
-                                k.getCells().remove(c.getName());
-
-                                removeNode((DefaultMutableTreeNode) node.getParent(), node);
-                            } else if (parent instanceof SColumn) {
-                                SColumn s = (SColumn) parent;
-                                Key k = (Key) s.getParent();
-                                client.removeColumn(keyspace, columnFamily, k.getName(), s.getName(), c.getName());
-                                s.getCells().remove(c.getName());
-
-                                DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) node.getParent();
-                                removeNode(parentNode, node);
-
-                                if (s.getCells().isEmpty()) {
-                                    k.getSColumns().remove(s.getName());
-                                    removeNode((DefaultMutableTreeNode) parentNode.getParent(), parentNode);
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
-                        e.printStackTrace();
-                    }
-                }
-
-                break;
-            }
-        }
-
-        private void removeNode(DefaultMutableTreeNode parentNode,
-                                DefaultMutableTreeNode node) {
-            if (parentNode != null && node != null) {
-                node.removeFromParent();
-                treeModel.reload(parentNode);
-            }
-        }
-
-        private String getName() {
-            if (unit instanceof Key) {
-                return ((Key) unit).getName();
-            } else if (unit instanceof SColumn) {
-                return ((SColumn) unit).getName();
-            }
-
-            return ((Cell) unit).getName();
-        }
-    }
 
     private class MousePopup extends MouseAdapter {
         @Override
@@ -184,20 +43,33 @@ public class ColumnTreePane extends JPanel {
                 DefaultMutableTreeNode node =
                     (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
                 Unit u = unitMap.get(node);
-                if (node != null && u != null) {
-                    JPopupMenu popup = new JPopupMenu();
-                    if (u instanceof Key) {
-                        popup.add(new PopupAction("remove", PopupAction.OPERATION_REMOVE, node, u));
-                        popup.show(e.getComponent(), e.getX(), e.getY());
-                    } else if (u instanceof SColumn) {
-                        popup.add(new PopupAction("remove", PopupAction.OPERATION_REMOVE, node, u));
-                        popup.show(e.getComponent(), e.getX(), e.getY());
-                    } else if (u instanceof Cell) {
-                        popup.add(new PopupAction("properties", PopupAction.OPERATION_PROPERTIES, node, u));
-                        popup.add(new PopupAction("remove", PopupAction.OPERATION_REMOVE, node, u));
-                        popup.show(e.getComponent(), e.getX(), e.getY());
+                TreeNode treeNode = new TreeNode(client,
+                                                 keyspace,
+                                                 columnFamily,
+                                                 node,
+                                                 treeModel,
+                                                 u,
+                                                 unitMap);
+                JPopupMenu popup = new JPopupMenu();
+                if (u == null) {
+                    popup.add(new ColumnPopupAction("add",
+                                                    ColumnPopupAction.OPERATION_PROPERTIES,
+                                                    treeNode));
+                } else {
+                    if (u instanceof Cell) {
+                        popup.add(new ColumnPopupAction("properties",
+                                                        ColumnPopupAction.OPERATION_PROPERTIES,
+                                                        treeNode));
+                    } else {
+                        popup.add(new ColumnPopupAction("add",
+                                                        ColumnPopupAction.OPERATION_PROPERTIES,
+                                                        treeNode));
                     }
+                    popup.add(new ColumnPopupAction("remove",
+                                                    ColumnPopupAction.OPERATION_REMOVE,
+                                                    treeNode));
                 }
+                popup.show(e.getComponent(), e.getX(), e.getY());
             }
         }
     }
