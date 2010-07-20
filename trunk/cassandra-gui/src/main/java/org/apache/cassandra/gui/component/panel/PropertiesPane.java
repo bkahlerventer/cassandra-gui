@@ -36,7 +36,7 @@ public class PropertiesPane extends JPanel {
     private JTable table;
 
     private DefaultTableModel tableModel;
-    
+
     public PropertiesPane(final Client client) {
         this.client = client;
 

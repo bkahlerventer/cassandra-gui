@@ -13,6 +13,7 @@ public class TreeNode implements Serializable {
     private static final long serialVersionUID = -227448839733721587L;
 
     private Client client;
+    private boolean superColumn;
     private String keyspace;
     private String columnFamily;
     private DefaultMutableTreeNode node;
@@ -24,6 +25,7 @@ public class TreeNode implements Serializable {
     }
 
     public TreeNode(Client client,
+                    boolean superColumn,
                     String keyspace,
                     String columnFamily,
                     DefaultMutableTreeNode node,
@@ -31,6 +33,7 @@ public class TreeNode implements Serializable {
                     Unit unit,
                     Map<DefaultMutableTreeNode, Unit> unitMap) {
         this.client = client;
+        this.superColumn = superColumn;
         this.keyspace = keyspace;
         this.columnFamily = columnFamily;
         this.node = node;
@@ -51,6 +54,20 @@ public class TreeNode implements Serializable {
      */
     public void setClient(Client client) {
         this.client = client;
+    }
+
+    /**
+     * @return the superColumn
+     */
+    public boolean isSuperColumn() {
+        return superColumn;
+    }
+
+    /**
+     * @param superColumn the superColumn to set
+     */
+    public void setSuperColumn(boolean superColumn) {
+        this.superColumn = superColumn;
     }
 
     /**
