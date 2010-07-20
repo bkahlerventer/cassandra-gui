@@ -44,6 +44,7 @@ public class ColumnTreePane extends JPanel {
                     (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
                 Unit u = unitMap.get(node);
                 TreeNode treeNode = new TreeNode(client,
+                                                 superColumn,
                                                  keyspace,
                                                  columnFamily,
                                                  node,
@@ -75,9 +76,12 @@ public class ColumnTreePane extends JPanel {
     }
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
+    private static final String COLUMN_FAMILY_TYPE = "Type";
+    private static final String COLUMN_FAMILY_TYPE_SUPER = "Super";
 
     private Client client;
 
+    private boolean superColumn = false;
     private String keyspace;
     private String columnFamily;
 
@@ -111,6 +115,13 @@ public class ColumnTreePane extends JPanel {
         this.columnFamily = columnFamily;
 
         try {
+            Map<String, String> m = client.getColumnFamily(keyspace, columnFamily);
+            if (m.get(COLUMN_FAMILY_TYPE).equals(COLUMN_FAMILY_TYPE_SUPER)) {
+                this.superColumn = true;
+            } else {
+                this.superColumn = false;
+            }
+
             setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             Map<String, Key> l =
                 client.listKeyAndValues(keyspace, columnFamily, startKey, endKey, rows);
