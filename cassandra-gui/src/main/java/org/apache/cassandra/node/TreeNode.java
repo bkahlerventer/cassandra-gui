@@ -13,9 +13,6 @@ public class TreeNode implements Serializable {
     private static final long serialVersionUID = -227448839733721587L;
 
     private Client client;
-    private boolean superColumn;
-    private String keyspace;
-    private String columnFamily;
     private DefaultMutableTreeNode node;
     private DefaultTreeModel treeModel;
     private Unit unit;
@@ -25,17 +22,11 @@ public class TreeNode implements Serializable {
     }
 
     public TreeNode(Client client,
-                    boolean superColumn,
-                    String keyspace,
-                    String columnFamily,
                     DefaultMutableTreeNode node,
                     DefaultTreeModel treeModel,
                     Unit unit,
                     Map<DefaultMutableTreeNode, Unit> unitMap) {
         this.client = client;
-        this.superColumn = superColumn;
-        this.keyspace = keyspace;
-        this.columnFamily = columnFamily;
         this.node = node;
         this.treeModel = treeModel;
         this.unit = unit;
@@ -54,48 +45,6 @@ public class TreeNode implements Serializable {
      */
     public void setClient(Client client) {
         this.client = client;
-    }
-
-    /**
-     * @return the superColumn
-     */
-    public boolean isSuperColumn() {
-        return superColumn;
-    }
-
-    /**
-     * @param superColumn the superColumn to set
-     */
-    public void setSuperColumn(boolean superColumn) {
-        this.superColumn = superColumn;
-    }
-
-    /**
-     * @return the keyspace
-     */
-    public String getKeyspace() {
-        return keyspace;
-    }
-
-    /**
-     * @param keyspace the keyspace to set
-     */
-    public void setKeyspace(String keyspace) {
-        this.keyspace = keyspace;
-    }
-
-    /**
-     * @return the columnFamily
-     */
-    public String getColumnFamily() {
-        return columnFamily;
-    }
-
-    /**
-     * @param columnFamily the columnFamily to set
-     */
-    public void setColumnFamily(String columnFamily) {
-        this.columnFamily = columnFamily;
     }
 
     /**

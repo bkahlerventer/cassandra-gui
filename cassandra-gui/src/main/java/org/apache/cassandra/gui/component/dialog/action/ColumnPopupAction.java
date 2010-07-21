@@ -81,8 +81,8 @@ public class ColumnPopupAction extends AbstractAction {
 
         Date d = null;
         try {
-            d = treeNode.getClient().insertColumn(treeNode.getKeyspace(),
-                                                  treeNode.getColumnFamily(),
+            d = treeNode.getClient().insertColumn(treeNode.getClient().getKeyspace(),
+                                                  treeNode.getClient().getColumnFamily(),
                                                   k.getName(),
                                                   s == null ? null : s.getName(),
                                                   cpdlg.getName(),
@@ -129,8 +129,8 @@ public class ColumnPopupAction extends AbstractAction {
 
         Date d = null;
         try {
-            d = treeNode.getClient().insertColumn(treeNode.getKeyspace(),
-                                                  treeNode.getColumnFamily(),
+            d = treeNode.getClient().insertColumn(treeNode.getClient().getKeyspace(),
+                                                  treeNode.getClient().getColumnFamily(),
                                                   k.getName(),
                                                   s.getName(),
                                                   cpdlg.getName(),
@@ -173,8 +173,8 @@ public class ColumnPopupAction extends AbstractAction {
 
         Date d = null;
         try {
-            d = treeNode.getClient().insertColumn(treeNode.getKeyspace(),
-                                                  treeNode.getColumnFamily(),
+            d = treeNode.getClient().insertColumn(treeNode.getClient().getKeyspace(),
+                                                  treeNode.getClient().getColumnFamily(),
                                                   k.getName(),
                                                   s == null ? null : s.getName(),
                                                   cpdlg.getName(),
@@ -198,8 +198,8 @@ public class ColumnPopupAction extends AbstractAction {
         try {
             if (treeNode.getUnit() instanceof Key) {
                 Key k = (Key) treeNode.getUnit();
-                treeNode.getClient().removeKey(treeNode.getKeyspace(),
-                                               treeNode.getColumnFamily(),
+                treeNode.getClient().removeKey(treeNode.getClient().getKeyspace(),
+                                               treeNode.getClient().getColumnFamily(),
                                                k.getName());
 
                 treeNode.getNode().removeAllChildren();
@@ -207,8 +207,8 @@ public class ColumnPopupAction extends AbstractAction {
             } else if (treeNode.getUnit() instanceof SColumn) {
                 SColumn s = (SColumn) treeNode.getUnit();
                 Key k = (Key) s.getParent();
-                treeNode.getClient().removeSuperColumn(treeNode.getKeyspace(),
-                                                       treeNode.getColumnFamily(),
+                treeNode.getClient().removeSuperColumn(treeNode.getClient().getKeyspace(),
+                                                       treeNode.getClient().getColumnFamily(),
                                                        k.getName(), 
                                                        s.getName());
                 k.getSColumns().remove(s.getName());
@@ -219,8 +219,8 @@ public class ColumnPopupAction extends AbstractAction {
                 Unit parent = c.getParent();
                 if (parent instanceof Key) {
                     Key k = (Key) parent;
-                    treeNode.getClient().removeColumn(treeNode.getKeyspace(),
-                                                      treeNode.getColumnFamily(),
+                    treeNode.getClient().removeColumn(treeNode.getClient().getKeyspace(),
+                                                      treeNode.getClient().getColumnFamily(),
                                                       k.getName(),
                                                       c.getName());
                     k.getCells().remove(c.getName());
@@ -229,8 +229,8 @@ public class ColumnPopupAction extends AbstractAction {
                 } else if (parent instanceof SColumn) {
                     SColumn s = (SColumn) parent;
                     Key k = (Key) s.getParent();
-                    treeNode.getClient().removeColumn(treeNode.getKeyspace(),
-                                                      treeNode.getColumnFamily(),
+                    treeNode.getClient().removeColumn(treeNode.getClient().getKeyspace(),
+                                                      treeNode.getClient().getColumnFamily(),
                                                       k.getName(),
                                                       s.getName(),
                                                       c.getName());
