@@ -35,6 +35,9 @@ public class ConnectionDlg extends JDialog {
     public ConnectionDlg(JFrame owner){
         super(owner);
 
+        thriftPortText.setText(String.valueOf(Client.DEFAULT_THRIFT_PORT));
+        jmxPortTextField.setText(String.valueOf(Client.DEFAULT_JMX_PORT));
+
         hostText.addActionListener(new EnterAction());
         thriftPortText.addActionListener(new EnterAction());
         jmxPortTextField.addActionListener(new EnterAction());

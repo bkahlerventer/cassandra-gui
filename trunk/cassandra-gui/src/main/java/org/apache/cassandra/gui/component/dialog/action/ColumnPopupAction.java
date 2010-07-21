@@ -10,6 +10,7 @@ import javax.swing.Action;
 import javax.swing.JOptionPane;
 import javax.swing.tree.DefaultMutableTreeNode;
 
+import org.apache.cassandra.client.Client;
 import org.apache.cassandra.gui.component.dialog.CellPropertiesDlg;
 import org.apache.cassandra.node.TreeNode;
 import org.apache.cassandra.unit.Cell;
@@ -27,12 +28,14 @@ public class ColumnPopupAction extends AbstractAction {
 
     private int operation;
     private TreeNode treeNode;
+    private Client client;
 
     public ColumnPopupAction(String name,
                              int operation,
                              TreeNode treeNode) {
         this.operation = operation;
         this.treeNode = treeNode;
+        this.client = treeNode.getClient();
         putValue(Action.NAME, name);
     }
 
@@ -41,6 +44,7 @@ public class ColumnPopupAction extends AbstractAction {
         switch (operation) {
         case OPERATION_PROPERTIES:
             if (treeNode.getUnit() == null) {
+                insertKeyCell();
             } else if (treeNode.getUnit() instanceof Key) {
                 insertCell();
             } else if (treeNode.getUnit() instanceof SColumn) {
@@ -64,6 +68,68 @@ public class ColumnPopupAction extends AbstractAction {
         }
     }
 
+    private void insertKeyCell() {
+        CellPropertiesDlg cpdlg = new CellPropertiesDlg(client.isSuperColumn() ?
+                                                        CellPropertiesDlg.OPERATION_KEY_SUPERCOLUMN_INSERT :
+                                                        CellPropertiesDlg.OPERATION_KEY_INSERT);
+        cpdlg.setVisible(true);
+        if (cpdlg.isCancel()) {
+            return;
+        }
+
+        Key k = new Key(cpdlg.getKey(), new HashMap<String, SColumn>(), new HashMap<String, Cell>());
+        k.setSuperColumn(client.isSuperColumn());
+
+        SColumn s = null;
+        if (k.isSuperColumn()) {
+            s = new SColumn(k, cpdlg.getSuperColumn(), new HashMap<String, Cell>());
+        }
+
+        Date d = null;
+        try {
+            d = client.insertColumn(client.getKeyspace(),
+                                    client.getColumnFamily(),
+                                    k.getName(),
+                                    s == null ? null : s.getName(),
+                                    cpdlg.getName(),
+                                    cpdlg.getValue());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        DefaultMutableTreeNode kn = new DefaultMutableTreeNode(k.getName());
+        if (k.isSuperColumn()) {
+            Cell c = new Cell(s, cpdlg.getName(), cpdlg.getValue(), d);
+            DefaultMutableTreeNode cn = new DefaultMutableTreeNode(c.getName() + "=" + c.getValue() + ", " +
+                                                                   DATE_FORMAT.format(c.getDate()));
+            s.getCells().put(c.getName(), c);
+            k.getSColumns().put(s.getName(), s);
+
+            DefaultMutableTreeNode sn = new DefaultMutableTreeNode(s.getName());
+            sn.add(cn);
+            kn.add(sn);
+            treeNode.getNode().add(kn);
+
+            treeNode.getUnitMap().put(kn, k);
+            treeNode.getUnitMap().put(sn, s);
+            treeNode.getUnitMap().put(cn, c);
+        } else {
+            Cell c = new Cell(k, cpdlg.getName(), cpdlg.getValue(), d);
+            DefaultMutableTreeNode cn = new DefaultMutableTreeNode(c.getName() + "=" + c.getValue() + ", " +
+                                                                   DATE_FORMAT.format(c.getDate()));
+            k.getCells().put(c.getName(), c);
+
+            kn.add(cn);
+            treeNode.getNode().add(kn);
+
+            treeNode.getUnitMap().put(kn, k);
+            treeNode.getUnitMap().put(cn, c);
+        }
+
+        treeNode.getTreeModel().reload(treeNode.getNode());
+    }
+
     private void insertCell() {
         Key k = (Key) treeNode.getUnit();
 
@@ -81,12 +147,12 @@ public class ColumnPopupAction extends AbstractAction {
 
         Date d = null;
         try {
-            d = treeNode.getClient().insertColumn(treeNode.getClient().getKeyspace(),
-                                                  treeNode.getClient().getColumnFamily(),
-                                                  k.getName(),
-                                                  s == null ? null : s.getName(),
-                                                  cpdlg.getName(),
-                                                  cpdlg.getValue());
+            d = client.insertColumn(client.getKeyspace(),
+                                    client.getColumnFamily(),
+                                    k.getName(),
+                                    s == null ? null : s.getName(),
+                                    cpdlg.getName(),
+                                    cpdlg.getValue());
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
             e.printStackTrace();
@@ -129,12 +195,12 @@ public class ColumnPopupAction extends AbstractAction {
 
         Date d = null;
         try {
-            d = treeNode.getClient().insertColumn(treeNode.getClient().getKeyspace(),
-                                                  treeNode.getClient().getColumnFamily(),
-                                                  k.getName(),
-                                                  s.getName(),
-                                                  cpdlg.getName(),
-                                                  cpdlg.getValue());
+            d = client.insertColumn(client.getKeyspace(),
+                                    client.getColumnFamily(),
+                                    k.getName(),
+                                    s.getName(),
+                                    cpdlg.getName(),
+                                    cpdlg.getValue());
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
             e.printStackTrace();
@@ -173,12 +239,12 @@ public class ColumnPopupAction extends AbstractAction {
 
         Date d = null;
         try {
-            d = treeNode.getClient().insertColumn(treeNode.getClient().getKeyspace(),
-                                                  treeNode.getClient().getColumnFamily(),
-                                                  k.getName(),
-                                                  s == null ? null : s.getName(),
-                                                  cpdlg.getName(),
-                                                  cpdlg.getValue());
+            d = client.insertColumn(client.getKeyspace(),
+                                    client.getColumnFamily(),
+                                    k.getName(),
+                                    s == null ? null : s.getName(),
+                                    cpdlg.getName(),
+                                    cpdlg.getValue());
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
             e.printStackTrace();
@@ -198,19 +264,19 @@ public class ColumnPopupAction extends AbstractAction {
         try {
             if (treeNode.getUnit() instanceof Key) {
                 Key k = (Key) treeNode.getUnit();
-                treeNode.getClient().removeKey(treeNode.getClient().getKeyspace(),
-                                               treeNode.getClient().getColumnFamily(),
-                                               k.getName());
+                client.removeKey(client.getKeyspace(),
+                                 client.getColumnFamily(),
+                                 k.getName());
 
                 treeNode.getNode().removeAllChildren();
                 treeNode.getTreeModel().reload(treeNode.getNode());
             } else if (treeNode.getUnit() instanceof SColumn) {
                 SColumn s = (SColumn) treeNode.getUnit();
                 Key k = (Key) s.getParent();
-                treeNode.getClient().removeSuperColumn(treeNode.getClient().getKeyspace(),
-                                                       treeNode.getClient().getColumnFamily(),
-                                                       k.getName(), 
-                                                       s.getName());
+                client.removeSuperColumn(client.getKeyspace(),
+                                         client.getColumnFamily(),
+                                         k.getName(),
+                                         s.getName());
                 k.getSColumns().remove(s.getName());
 
                 removeNode((DefaultMutableTreeNode) treeNode.getNode().getParent(), treeNode.getNode());
@@ -219,21 +285,21 @@ public class ColumnPopupAction extends AbstractAction {
                 Unit parent = c.getParent();
                 if (parent instanceof Key) {
                     Key k = (Key) parent;
-                    treeNode.getClient().removeColumn(treeNode.getClient().getKeyspace(),
-                                                      treeNode.getClient().getColumnFamily(),
-                                                      k.getName(),
-                                                      c.getName());
+                    client.removeColumn(client.getKeyspace(),
+                                        client.getColumnFamily(),
+                                        k.getName(),
+                                        c.getName());
                     k.getCells().remove(c.getName());
 
                     removeNode((DefaultMutableTreeNode) treeNode.getNode().getParent(), treeNode.getNode());
                 } else if (parent instanceof SColumn) {
                     SColumn s = (SColumn) parent;
                     Key k = (Key) s.getParent();
-                    treeNode.getClient().removeColumn(treeNode.getClient().getKeyspace(),
-                                                      treeNode.getClient().getColumnFamily(),
-                                                      k.getName(),
-                                                      s.getName(),
-                                                      c.getName());
+                    client.removeColumn(client.getKeyspace(),
+                                        client.getColumnFamily(),
+                                        k.getName(),
+                                        s.getName(),
+                                        c.getName());
                     s.getCells().remove(c.getName());
 
                     DefaultMutableTreeNode parentNode =
