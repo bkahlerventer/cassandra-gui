@@ -44,9 +44,6 @@ public class ColumnTreePane extends JPanel {
                     (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
                 Unit u = unitMap.get(node);
                 TreeNode treeNode = new TreeNode(client,
-                                                 superColumn,
-                                                 keyspace,
-                                                 columnFamily,
                                                  node,
                                                  treeModel,
                                                  u,
@@ -81,10 +78,6 @@ public class ColumnTreePane extends JPanel {
 
     private Client client;
 
-    private boolean superColumn = false;
-    private String keyspace;
-    private String columnFamily;
-
     private RepaintCallback rCallback;
     private JScrollPane scrollPane;
     private JTree tree;
@@ -111,15 +104,12 @@ public class ColumnTreePane extends JPanel {
     }
 
     public void showRows(String keyspace, String columnFamily, String startKey, String endKey, int rows) {
-        this.keyspace = keyspace;
-        this.columnFamily = columnFamily;
-
         try {
             Map<String, String> m = client.getColumnFamily(keyspace, columnFamily);
             if (m.get(COLUMN_FAMILY_TYPE).equals(COLUMN_FAMILY_TYPE_SUPER)) {
-                this.superColumn = true;
+                client.setSuperColumn(true);
             } else {
-                this.superColumn = false;
+                client.setSuperColumn(false);
             }
 
             setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -135,7 +125,7 @@ public class ColumnTreePane extends JPanel {
     }
 
     private void showTree(Map<String, Key> l) {
-        DefaultMutableTreeNode columnFamilyNode = new DefaultMutableTreeNode(columnFamily);
+        DefaultMutableTreeNode columnFamilyNode = new DefaultMutableTreeNode(client.getColumnFamily());
         treeModel = new DefaultTreeModel(columnFamilyNode);
         tree = new JTree(treeModel);
         tree.setRootVisible(true);
