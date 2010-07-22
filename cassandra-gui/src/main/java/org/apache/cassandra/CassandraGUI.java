@@ -7,10 +7,10 @@ import java.awt.Toolkit;
 import javax.swing.JFrame;
 import javax.swing.JSplitPane;
 
-import org.apache.cassandra.gui.component.dialog.ConnectionDlg;
-import org.apache.cassandra.gui.component.panel.ColumnTreePane;
+import org.apache.cassandra.gui.component.dialog.ConnectionDialog;
+import org.apache.cassandra.gui.component.panel.ColumnTreePanel;
 import org.apache.cassandra.gui.component.panel.KeyspaceTreePanel;
-import org.apache.cassandra.gui.component.panel.PropertiesPane;
+import org.apache.cassandra.gui.component.panel.PropertiesPanel;
 import org.apache.cassandra.gui.control.callback.PropertiesCallback;
 import org.apache.cassandra.gui.control.callback.RepaintCallback;
 import org.apache.cassandra.gui.control.callback.SelectedColumnFamilyCallback;
@@ -35,15 +35,15 @@ public class CassandraGUI extends JFrame {
     public boolean createAndShow() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        ConnectionDlg dlg = new ConnectionDlg(this);
+        ConnectionDialog dlg = new ConnectionDialog(this);
         if (dlg.getClient() == null) {
             return false;
         }
 
         Toolkit.getDefaultToolkit().setDynamicLayout(true);
 
-        final PropertiesPane propertiesPane = new PropertiesPane(dlg.getClient());
-        final ColumnTreePane columnTreePane = new ColumnTreePane(dlg.getClient());
+        final PropertiesPanel propertiesPane = new PropertiesPanel(dlg.getClient());
+        final ColumnTreePanel columnTreePane = new ColumnTreePanel(dlg.getClient());
         final KeyspaceTreePanel keyspaceTreePanel = new KeyspaceTreePanel(dlg.getClient());
         keyspaceTreePanel.setcCallback(new SelectedColumnFamilyCallback() {
             @Override

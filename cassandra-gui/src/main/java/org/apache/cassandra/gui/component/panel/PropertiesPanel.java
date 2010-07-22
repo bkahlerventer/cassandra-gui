@@ -14,11 +14,11 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 
 import org.apache.cassandra.client.Client;
-import org.apache.cassandra.gui.component.dialog.RingDlg;
-import org.apache.cassandra.gui.component.dialog.ShowConfigDlg;
+import org.apache.cassandra.gui.component.dialog.RingDialog;
+import org.apache.cassandra.gui.component.dialog.ShowConfigDialog;
 import org.apache.cassandra.gui.control.callback.RepaintCallback;
 
-public class PropertiesPane extends JPanel {
+public class PropertiesPanel extends JPanel {
     private static final long serialVersionUID = 1452324774722196104L;
 
     private static final String COLUMN_VERSION = "api version";
@@ -37,7 +37,7 @@ public class PropertiesPane extends JPanel {
 
     private DefaultTableModel tableModel;
 
-    public PropertiesPane(final Client client) {
+    public PropertiesPanel(final Client client) {
         this.client = client;
 
         tableModel = new DefaultTableModel(columns, 0) {
@@ -61,10 +61,10 @@ public class PropertiesPane extends JPanel {
                     try {
                         if (tableModel.getValueAt(row, 0).equals(COLUMN_CONFIG_FILE)) {
                             String str = client.getConfigFile();
-                            ShowConfigDlg dlg = new ShowConfigDlg(str);
+                            ShowConfigDialog dlg = new ShowConfigDialog(str);
                             dlg.setVisible(true);
                         } else if (tableModel.getValueAt(row, 0).equals(COLUMN_RING)) {
-                            RingDlg rd = new RingDlg(client);
+                            RingDialog rd = new RingDialog(client);
                             rd.setVisible(true);
                         }
                     } catch (Exception e) {

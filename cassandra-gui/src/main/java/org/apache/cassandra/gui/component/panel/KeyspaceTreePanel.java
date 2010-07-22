@@ -25,8 +25,8 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 
 import org.apache.cassandra.client.Client;
-import org.apache.cassandra.gui.component.dialog.KeyDlg;
-import org.apache.cassandra.gui.component.dialog.KeyRangeDlg;
+import org.apache.cassandra.gui.component.dialog.KeyDialog;
+import org.apache.cassandra.gui.component.dialog.KeyRangeDialog;
 import org.apache.cassandra.gui.control.callback.PropertiesCallback;
 import org.apache.cassandra.gui.control.callback.RepaintCallback;
 import org.apache.cassandra.gui.control.callback.SelectedColumnFamilyCallback;
@@ -67,7 +67,7 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                 String endKey = "";
 
                 if (operation == OPERATION_KEYRANGE) {
-                    KeyRangeDlg krd = new KeyRangeDlg();
+                    KeyRangeDialog krd = new KeyRangeDialog();
                     krd.setVisible(true);
                     if (krd.isCancel()) {
                         return;
@@ -84,7 +84,7 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                                         ROWS_1000);
                 break;
             case OPERATION_KEY:
-                KeyDlg kd = new KeyDlg();
+                KeyDialog kd = new KeyDialog();
                 kd.setVisible(true);
                 if (kd.isCancel()) {
                     return;
