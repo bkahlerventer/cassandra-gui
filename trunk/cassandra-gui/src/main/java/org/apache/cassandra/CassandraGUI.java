@@ -8,6 +8,7 @@ import javax.swing.JFrame;
 import javax.swing.JSplitPane;
 
 import org.apache.cassandra.gui.component.dialog.ConnectionDialog;
+import org.apache.cassandra.gui.component.dialog.listener.WindowCloseedListener;
 import org.apache.cassandra.gui.component.panel.ColumnTreePanel;
 import org.apache.cassandra.gui.component.panel.KeyspaceTreePanel;
 import org.apache.cassandra.gui.component.panel.PropertiesPanel;
@@ -33,12 +34,18 @@ public class CassandraGUI extends JFrame {
     }
 
     public boolean createAndShow() {
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        ConnectionDialog dlg = new ConnectionDialog(this);
+        final ConnectionDialog dlg = new ConnectionDialog(this);
         if (dlg.getClient() == null) {
             return false;
         }
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        addWindowListener(new WindowCloseedListener() {
+            @Override
+            public void closing() {
+                dlg.getClient().disconnect();
+            }
+        });
 
         Toolkit.getDefaultToolkit().setDynamicLayout(true);
 
