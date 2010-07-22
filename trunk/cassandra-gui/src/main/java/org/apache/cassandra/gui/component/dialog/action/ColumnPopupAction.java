@@ -11,7 +11,7 @@ import javax.swing.JOptionPane;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import org.apache.cassandra.client.Client;
-import org.apache.cassandra.gui.component.dialog.CellPropertiesDlg;
+import org.apache.cassandra.gui.component.dialog.CellPropertiesDialog;
 import org.apache.cassandra.node.TreeNode;
 import org.apache.cassandra.unit.Cell;
 import org.apache.cassandra.unit.Key;
@@ -69,9 +69,9 @@ public class ColumnPopupAction extends AbstractAction {
     }
 
     private void insertKeyCell() {
-        CellPropertiesDlg cpdlg = new CellPropertiesDlg(client.isSuperColumn() ?
-                                                        CellPropertiesDlg.OPERATION_KEY_SUPERCOLUMN_INSERT :
-                                                        CellPropertiesDlg.OPERATION_KEY_INSERT);
+        CellPropertiesDialog cpdlg = new CellPropertiesDialog(client.isSuperColumn() ?
+                                                        CellPropertiesDialog.OPERATION_KEY_SUPERCOLUMN_INSERT :
+                                                        CellPropertiesDialog.OPERATION_KEY_INSERT);
         cpdlg.setVisible(true);
         if (cpdlg.isCancel()) {
             return;
@@ -133,8 +133,8 @@ public class ColumnPopupAction extends AbstractAction {
     private void insertCell() {
         Key k = (Key) treeNode.getUnit();
 
-        CellPropertiesDlg cpdlg = new CellPropertiesDlg(k.isSuperColumn() ? CellPropertiesDlg.OPERATION_SUPERCOLUMN_INSERT :
-                                                                            CellPropertiesDlg.OPERATION_CELL_INSERT);
+        CellPropertiesDialog cpdlg = new CellPropertiesDialog(k.isSuperColumn() ? CellPropertiesDialog.OPERATION_SUPERCOLUMN_INSERT :
+                                                                            CellPropertiesDialog.OPERATION_CELL_INSERT);
         cpdlg.setVisible(true);
         if (cpdlg.isCancel()) {
             return;
@@ -185,7 +185,7 @@ public class ColumnPopupAction extends AbstractAction {
 
     private void insertSuperColumnCell() {
         SColumn s = (SColumn) treeNode.getUnit();
-        CellPropertiesDlg cpdlg = new CellPropertiesDlg(CellPropertiesDlg.OPERATION_CELL_INSERT);
+        CellPropertiesDialog cpdlg = new CellPropertiesDialog(CellPropertiesDialog.OPERATION_CELL_INSERT);
         cpdlg.setVisible(true);
         if (cpdlg.isCancel()) {
             return;
@@ -218,7 +218,7 @@ public class ColumnPopupAction extends AbstractAction {
 
     private void updateCell() {
         Cell c = (Cell) treeNode.getUnit();
-        CellPropertiesDlg cpdlg = new CellPropertiesDlg(CellPropertiesDlg.OPERATION_CELL_UPDATE,
+        CellPropertiesDialog cpdlg = new CellPropertiesDialog(CellPropertiesDialog.OPERATION_CELL_UPDATE,
                                                         c.getName(),
                                                         c.getValue());
         cpdlg.setVisible(true);

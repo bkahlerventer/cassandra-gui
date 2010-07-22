@@ -27,7 +27,7 @@ import org.apache.cassandra.unit.Key;
 import org.apache.cassandra.unit.SColumn;
 import org.apache.cassandra.unit.Unit;
 
-public class ColumnTreePane extends JPanel {
+public class ColumnTreePanel extends JPanel {
     private static final long serialVersionUID = -4236268406209844637L;
 
     private class MousePopup extends MouseAdapter {
@@ -85,7 +85,7 @@ public class ColumnTreePane extends JPanel {
 
     private Map<DefaultMutableTreeNode, Unit> unitMap = new HashMap<DefaultMutableTreeNode, Unit>();
 
-    public ColumnTreePane(Client client) {
+    public ColumnTreePanel(Client client) {
         this.client = client;
         scrollPane = new JScrollPane();
         add(scrollPane);

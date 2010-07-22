@@ -16,7 +16,7 @@ import javax.swing.JTextField;
 
 import org.apache.cassandra.client.Client;
 
-public class ConnectionDlg extends JDialog {
+public class ConnectionDialog extends JDialog {
     private static final long serialVersionUID = 8707158056959280058L;
 
     private class EnterAction implements ActionListener {
@@ -32,7 +32,7 @@ public class ConnectionDlg extends JDialog {
     private JTextField thriftPortText = new JTextField();
     private JTextField jmxPortTextField = new JTextField();
 
-    public ConnectionDlg(JFrame owner){
+    public ConnectionDialog(JFrame owner){
         super(owner);
 
         thriftPortText.setText(String.valueOf(Client.DEFAULT_THRIFT_PORT));

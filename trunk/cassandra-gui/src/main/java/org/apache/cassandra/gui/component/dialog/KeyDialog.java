@@ -13,7 +13,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-public class KeyDlg extends JDialog {
+public class KeyDialog extends JDialog {
     private static final long serialVersionUID = -6904488663855720774L;
 
     private class EnterAction implements ActionListener {
@@ -27,7 +27,7 @@ public class KeyDlg extends JDialog {
     private boolean cancel = true;
     private String key;
 
-    public KeyDlg() {
+    public KeyDialog() {
         keyText.addActionListener(new EnterAction());
 
         JPanel inputPanel = new JPanel(new GridLayout(1, 2));

@@ -21,7 +21,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
-public class CellPropertiesDlg extends JDialog {
+public class CellPropertiesDialog extends JDialog {
     private static final long serialVersionUID = -7378362468372008181L;
 
     private class PopupAction extends AbstractAction {
@@ -91,11 +91,11 @@ public class CellPropertiesDlg extends JDialog {
 
     private Map<String, JTextField> textFieldMap = new HashMap<String, JTextField>();
 
-    public CellPropertiesDlg(int operation) {
+    public CellPropertiesDialog(int operation) {
         this(operation, "", "");
     }
 
-    public CellPropertiesDlg(int operation, String name, String value){
+    public CellPropertiesDialog(int operation, String name, String value){
         JPanel propertiesPane = null;
         switch (operation) {
         case OPERATION_KEY_INSERT:
