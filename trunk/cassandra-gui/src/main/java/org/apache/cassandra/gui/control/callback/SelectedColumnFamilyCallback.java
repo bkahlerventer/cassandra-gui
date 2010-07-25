@@ -6,4 +6,8 @@ public interface SelectedColumnFamilyCallback {
                               String startKey,
                               String endKey,
                               int rows);
+
+    public void getCacllback(String keyspace,
+                             String columnFamily,
+                             String key);
 }

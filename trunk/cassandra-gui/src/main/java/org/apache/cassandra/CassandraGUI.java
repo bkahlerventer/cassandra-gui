@@ -61,6 +61,11 @@ public class CassandraGUI extends JFrame {
                                       int rows) {
                 columnTreePane.showRows(keyspaceName, columnFamilyName, startKey, endKey, rows);
             }
+
+            @Override
+            public void getCacllback(String keyspace, String columnFamily, String key) {
+                columnTreePane.showKey(keyspace, columnFamily, key);
+            }
         });
         keyspaceTreePanel.setPropertiesCallback(new PropertiesCallback() {
             @Override

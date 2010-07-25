@@ -280,12 +280,64 @@ public class Client {
         client.remove(keyspace, key, colPath, timestamp, ConsistencyLevel.ONE);
     }
 
+    public Map<String, Key> getKey(String keyspace, String columnFamily, String superColumn, String key)
+            throws InvalidRequestException, UnavailableException, TimedOutException, TException, UnsupportedEncodingException {
+        this.keyspace = keyspace;
+        this.columnFamily = columnFamily;
+
+        Map<String, Key> m = new TreeMap<String, Key>();
+
+        ColumnParent columnParent = new ColumnParent(columnFamily);
+        if (superColumn != null) {
+            columnParent.setSuper_column(superColumn.getBytes());
+        }
+
+        SliceRange sliceRange = new SliceRange();
+        sliceRange.setStart(new byte[0]);
+        sliceRange.setFinish(new byte[0]);
+
+        SlicePredicate slicePredicate = new SlicePredicate();
+        slicePredicate.setSlice_range(sliceRange);
+
+        List<ColumnOrSuperColumn> l =
+            client.get_slice(keyspace, key, columnParent, slicePredicate, ConsistencyLevel.ONE);
+
+        Key k = new Key(key, new TreeMap<String, SColumn>(), new TreeMap<String, Cell>());
+        for (ColumnOrSuperColumn column : l) {
+            k.setSuperColumn(column.isSetSuper_column());
+            if (column.isSetSuper_column()) {
+                SuperColumn scol = column.getSuper_column();
+                SColumn s = new SColumn(k, new String(scol.getName(), "UTF8"), new TreeMap<String, Cell>());
+                for (Column col : scol.getColumns()) {
+                    Cell c = new Cell(s,
+                                      new String(col.getName(), "UTF8"),
+                                      new String(col.getValue(), "UTF8"),
+                                      new Date(col.getTimestamp() / 1000));
+                    s.getCells().put(c.getName(), c);
+                }
+
+                k.getSColumns().put(s.getName(), s);
+            } else {
+                Column col = column.getColumn();
+                Cell c = new Cell(k,
+                                  new String(col.getName(), "UTF8"),
+                                  new String(col.getValue(), "UTF8"),
+                                  new Date(col.getTimestamp() / 1000));
+                k.getCells().put(c.getName(), c);
+            }
+
+            m.put(k.getName(), k);
+        }
+
+        return m; 
+    }
+
     public Map<String, Key> listKeyAndValues(String keyspace, String columnFamily, String startKey, String endKey, int rows)
             throws InvalidRequestException, UnavailableException, TimedOutException, TException, UnsupportedEncodingException {
         this.keyspace = keyspace;
         this.columnFamily = columnFamily;
 
-        Map<String, Key> l = new TreeMap<String, Key>();
+        Map<String, Key> m = new TreeMap<String, Key>();
 
         ColumnParent columnParent = new ColumnParent(columnFamily);
 
@@ -329,10 +381,10 @@ public class Client {
                 }
             }
 
-            l.put(key.getName(), key);
+            m.put(key.getName(), key);
         }
 
-        return l;
+        return m;
     }
 
     /**

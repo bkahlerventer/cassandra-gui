@@ -43,7 +43,6 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
         public static final int OPERATION_KEYRANGE = 2;
         public static final int OPERATION_KEY = 3;
 
-        public static final int ROWS_1 = 1;
         public static final int ROWS_1000 = 1000;
 
         private int operation;
@@ -90,11 +89,9 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                     return;
                 }
 
-                cCallback.rangeCallback(lastSelectedKeysapce,
-                                        lastSelectedColumnFamily,
-                                        kd.getkey(),
-                                        kd.getkey(),
-                                        ROWS_1);
+                cCallback.getCacllback(lastSelectedKeysapce,
+                                       lastSelectedColumnFamily,
+                                       kd.getkey());
                 break;
             }
         }
