@@ -70,8 +70,8 @@ public class ColumnPopupAction extends AbstractAction {
 
     private void insertKeyCell() {
         CellPropertiesDialog cpdlg = new CellPropertiesDialog(client.isSuperColumn() ?
-                                                        CellPropertiesDialog.OPERATION_KEY_SUPERCOLUMN_INSERT :
-                                                        CellPropertiesDialog.OPERATION_KEY_INSERT);
+                                                                  CellPropertiesDialog.OPERATION_KEY_SUPERCOLUMN_INSERT :
+                                                                  CellPropertiesDialog.OPERATION_KEY_INSERT);
         cpdlg.setVisible(true);
         if (cpdlg.isCancel()) {
             return;
@@ -96,6 +96,7 @@ public class ColumnPopupAction extends AbstractAction {
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
             e.printStackTrace();
+            return;
         }
 
         DefaultMutableTreeNode kn = new DefaultMutableTreeNode(k.getName());

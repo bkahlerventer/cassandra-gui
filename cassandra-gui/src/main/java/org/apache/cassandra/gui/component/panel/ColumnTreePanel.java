@@ -103,6 +103,28 @@ public class ColumnTreePanel extends JPanel {
         super.repaint();
     }
 
+    public void showKey(String keyspace, String columnFamily, String key) {
+        try {
+            Map<String, String> m = client.getColumnFamily(keyspace, columnFamily);
+            if (m.get(COLUMN_FAMILY_TYPE).equals(COLUMN_FAMILY_TYPE_SUPER)) {
+                client.setSuperColumn(true);
+            } else {
+                client.setSuperColumn(false);
+            }
+
+            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            Map<String, Key> l =
+                client.getKey(keyspace, columnFamily, null, key);
+            showTree(l);
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+        } catch (Exception e) {
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+            JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
     public void showRows(String keyspace, String columnFamily, String startKey, String endKey, int rows) {
         try {
             Map<String, String> m = client.getColumnFamily(keyspace, columnFamily);
