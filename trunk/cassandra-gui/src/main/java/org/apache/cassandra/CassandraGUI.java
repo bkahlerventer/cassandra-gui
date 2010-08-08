@@ -64,23 +64,26 @@ public class CassandraGUI extends JFrame {
 
             @Override
             public void getCacllback(String keyspace, String columnFamily, String key) {
-                columnTreePane.showKey(keyspace, columnFamily, key);
+                columnTreePane.showRow(keyspace, columnFamily, key);
             }
         });
         keyspaceTreePanel.setPropertiesCallback(new PropertiesCallback() {
             @Override
             public void clusterCallback() {
                 propertiesPane.showClusterProperties();
+                columnTreePane.clear();
             }
 
             @Override
             public void keyspaceCallback(String keyspace) {
                 propertiesPane.showKeyspaceProperties(keyspace);
+                columnTreePane.clear();
             }
 
             @Override
             public void columnFamilyCallback(String keyspace, String columnFamily) {
                 propertiesPane.showColumnFamilyProperties(keyspace, columnFamily);
+                columnTreePane.clear();
             }
         });
 

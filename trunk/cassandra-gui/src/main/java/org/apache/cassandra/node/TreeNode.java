@@ -17,6 +17,7 @@ public class TreeNode implements Serializable {
     private DefaultTreeModel treeModel;
     private Unit unit;
     private Map<DefaultMutableTreeNode, Unit> unitMap;
+    private Map<String, Unit> keyMap;
 
     public TreeNode() {
     }
@@ -25,12 +26,14 @@ public class TreeNode implements Serializable {
                     DefaultMutableTreeNode node,
                     DefaultTreeModel treeModel,
                     Unit unit,
-                    Map<DefaultMutableTreeNode, Unit> unitMap) {
+                    Map<DefaultMutableTreeNode, Unit> unitMap,
+                    Map<String, Unit> keyMap) {
         this.client = client;
         this.node = node;
         this.treeModel = treeModel;
         this.unit = unit;
         this.unitMap = unitMap;
+        this.keyMap = keyMap;
     }
 
     /**
@@ -101,5 +104,19 @@ public class TreeNode implements Serializable {
      */
     public void setUnitMap(Map<DefaultMutableTreeNode, Unit> unitMap) {
         this.unitMap = unitMap;
+    }
+
+    /**
+     * @return the keyMap
+     */
+    public Map<String, Unit> getKeyMap() {
+        return keyMap;
+    }
+
+    /**
+     * @param keyMap the keyMap to set
+     */
+    public void setKeyMap(Map<String, Unit> keyMap) {
+        this.keyMap = keyMap;
     }
 }

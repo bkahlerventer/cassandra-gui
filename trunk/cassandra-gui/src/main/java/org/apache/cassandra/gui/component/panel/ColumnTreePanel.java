@@ -47,24 +47,29 @@ public class ColumnTreePanel extends JPanel {
                                                  node,
                                                  treeModel,
                                                  u,
-                                                 unitMap);
+                                                 unitMap,
+                                                 keyMap);
                 JPopupMenu popup = new JPopupMenu();
                 if (u == null) {
                     popup.add(new ColumnPopupAction("add",
                                                     ColumnPopupAction.OPERATION_PROPERTIES,
+                                                    superColumn,
                                                     treeNode));
                 } else {
                     if (u instanceof Cell) {
                         popup.add(new ColumnPopupAction("properties",
                                                         ColumnPopupAction.OPERATION_PROPERTIES,
+                                                        superColumn,
                                                         treeNode));
                     } else {
                         popup.add(new ColumnPopupAction("add",
                                                         ColumnPopupAction.OPERATION_PROPERTIES,
+                                                        superColumn,
                                                         treeNode));
                     }
                     popup.add(new ColumnPopupAction("remove",
                                                     ColumnPopupAction.OPERATION_REMOVE,
+                                                    superColumn,
                                                     treeNode));
                 }
                 popup.show(e.getComponent(), e.getX(), e.getY());
@@ -72,11 +77,12 @@ public class ColumnTreePanel extends JPanel {
         }
     }
 
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
     private static final String COLUMN_FAMILY_TYPE = "Type";
     private static final String COLUMN_FAMILY_TYPE_SUPER = "Super";
 
     private Client client;
+    private boolean superColumn;
 
     private RepaintCallback rCallback;
     private JScrollPane scrollPane;
@@ -84,6 +90,7 @@ public class ColumnTreePanel extends JPanel {
     private DefaultTreeModel treeModel;
 
     private Map<DefaultMutableTreeNode, Unit> unitMap = new HashMap<DefaultMutableTreeNode, Unit>();
+    private Map<String, Unit> keyMap = new HashMap<String, Unit>();
 
     public ColumnTreePanel(Client client) {
         this.client = client;
@@ -103,13 +110,15 @@ public class ColumnTreePanel extends JPanel {
         super.repaint();
     }
 
-    public void showKey(String keyspace, String columnFamily, String key) {
+    public void showRow(String keyspace, String columnFamily, String key) {
         try {
             Map<String, String> m = client.getColumnFamily(keyspace, columnFamily);
             if (m.get(COLUMN_FAMILY_TYPE).equals(COLUMN_FAMILY_TYPE_SUPER)) {
                 client.setSuperColumn(true);
+                superColumn = true;
             } else {
                 client.setSuperColumn(false);
+                superColumn = false;
             }
 
             setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -124,14 +133,15 @@ public class ColumnTreePanel extends JPanel {
         }
     }
 
-
     public void showRows(String keyspace, String columnFamily, String startKey, String endKey, int rows) {
         try {
             Map<String, String> m = client.getColumnFamily(keyspace, columnFamily);
             if (m.get(COLUMN_FAMILY_TYPE).equals(COLUMN_FAMILY_TYPE_SUPER)) {
                 client.setSuperColumn(true);
+                superColumn = true;
             } else {
                 client.setSuperColumn(false);
+                superColumn = false;
             }
 
             setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -146,6 +156,15 @@ public class ColumnTreePanel extends JPanel {
         }
     }
 
+    public void clear() {
+        DefaultMutableTreeNode columnFamilyNode = new DefaultMutableTreeNode(client.getColumnFamily());
+        treeModel = new DefaultTreeModel(columnFamilyNode);
+        tree = new JTree(treeModel);
+        tree.setRootVisible(true);
+        scrollPane.getViewport().setView(tree);
+        repaint();
+    }
+
     private void showTree(Map<String, Key> l) {
         DefaultMutableTreeNode columnFamilyNode = new DefaultMutableTreeNode(client.getColumnFamily());
         treeModel = new DefaultTreeModel(columnFamilyNode);
@@ -156,18 +175,22 @@ public class ColumnTreePanel extends JPanel {
         for (String keyName : l.keySet()) {
             Key k = l.get(keyName);
             DefaultMutableTreeNode keyNode = new DefaultMutableTreeNode(k.getName());
+            k.setTreeNode(keyNode);
             columnFamilyNode.add(keyNode);
             unitMap.put(keyNode, k);
+            keyMap.put(k.getName(), k);
             if (k.isSuperColumn()) {
                 for (String sName : k.getSColumns().keySet()) {
                     SColumn sc = k.getSColumns().get(sName);
                     DefaultMutableTreeNode scNode = new DefaultMutableTreeNode(sc.getName());
+                    sc.setTreeNode(scNode);
                     keyNode.add(scNode);
                     unitMap.put(scNode, sc);
                     for (String cName : sc.getCells().keySet()) {
                         Cell c = sc.getCells().get(cName);
                         DefaultMutableTreeNode cellNode =
                             new DefaultMutableTreeNode(c.getName() + "=" + c.getValue() + ", " + DATE_FORMAT.format(c.getDate()));
+                        c.setTreeNode(cellNode);
                         scNode.add(cellNode);
                         unitMap.put(cellNode, c);
                     }
@@ -177,6 +200,7 @@ public class ColumnTreePanel extends JPanel {
                     Cell c = k.getCells().get(cName);
                     DefaultMutableTreeNode cellNode =
                         new DefaultMutableTreeNode(c.getName() + "=" + c.getValue() + ", " + DATE_FORMAT.format(c.getDate()));
+                    c.setTreeNode(cellNode);
                     keyNode.add(cellNode);
                     unitMap.put(cellNode, c);
                 }
