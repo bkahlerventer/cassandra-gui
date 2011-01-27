@@ -9,3 +9,13 @@ Extract the zip in a folder
 To start, execute following command
 
 *>java -jar cassandra-gui-0.7-beta1.jar*
+
+Login screen shall poop-up
+
+[http://cassandra-gui.googlecode.com/svn/wiki/images/login.JPG]
+
+Click Ok to connect.
+
+Once its connect, it shall show the Cassandra Schema details
+
+[http://cassandra-gui.googlecode.com/svn/wiki/images/schemaview.JPG]
