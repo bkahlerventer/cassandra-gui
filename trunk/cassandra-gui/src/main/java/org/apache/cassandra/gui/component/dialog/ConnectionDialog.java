@@ -16,6 +16,9 @@ import javax.swing.JTextField;
 
 import org.apache.cassandra.client.Client;
 
+/**
+ * Connection Dialogue class to connect to the Cassandra cluster
+ */
 public class ConnectionDialog extends JDialog {
     private static final long serialVersionUID = 8707158056959280058L;
 
@@ -43,11 +46,11 @@ public class ConnectionDialog extends JDialog {
         jmxPortTextField.addActionListener(new EnterAction());
 
         JPanel inputPanel = new JPanel(new GridLayout(3, 2));
-        inputPanel.add(new JLabel("host:"));
+        inputPanel.add(new JLabel("Host:"));
         inputPanel.add(hostText);
-        inputPanel.add(new JLabel("thrift port:"));
+        inputPanel.add(new JLabel("Thrift Port:"));
         inputPanel.add(thriftPortText);
-        inputPanel.add(new JLabel("jmx port:"));
+        inputPanel.add(new JLabel("JMX Port:"));
         inputPanel.add(jmxPortTextField);
 
         ok.addActionListener(new ActionListener() {
