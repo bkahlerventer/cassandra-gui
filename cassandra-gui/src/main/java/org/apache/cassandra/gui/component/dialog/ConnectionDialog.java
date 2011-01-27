@@ -73,7 +73,7 @@ public class ConnectionDialog extends JDialog {
         buttonPanel.add(cancel);
 
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(new JLabel("connect"), BorderLayout.NORTH);
+        panel.add(new JLabel("Connection Details"), BorderLayout.NORTH);
         panel.add(inputPanel, BorderLayout.CENTER);
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
@@ -81,14 +81,14 @@ public class ConnectionDialog extends JDialog {
 
         pack();
         setModalityType(ModalityType.DOCUMENT_MODAL);
-        setTitle("Connect");
+        setTitle("Connection Details");
         setLocationRelativeTo(null);
         setVisible(true);
     }
 
     private void enterAction() {
         if (hostText.getText().isEmpty()){
-            JOptionPane.showMessageDialog(null, "enter host name.");
+            JOptionPane.showMessageDialog(null, "Enter Hostname.");
             return;
         }
 
@@ -106,7 +106,7 @@ public class ConnectionDialog extends JDialog {
         try {
             client.connect();
         } catch (Exception e1) {
-            JOptionPane.showMessageDialog(null, "connection faild.");
+            JOptionPane.showMessageDialog(null, "Connection failed.");
             e1.printStackTrace();
             return;
         }
