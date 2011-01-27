@@ -1,0 +1,11 @@
+#summary One-sentence summary of this page.
+
+= Getting Started =
+
+Download Cassandra Gui from Downloads Section
+
+Extract the zip in a folder
+
+To start, execute following command
+
+*>java -jar cassandra-gui-0.7-beta1.jar*
