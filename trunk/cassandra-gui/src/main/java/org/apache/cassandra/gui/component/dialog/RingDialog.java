@@ -24,6 +24,7 @@ import javax.swing.JScrollPane;
 
 import org.apache.cassandra.client.Client;
 import org.apache.cassandra.dht.Range;
+import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.node.NodeInfo;
 import org.apache.cassandra.node.RingNode;
 import org.apache.cassandra.node.Tpstats;
@@ -93,10 +94,10 @@ public class RingDialog extends JDialog {
         final RingNode ringNode = client.listRing();
         setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
-        final Map<Range, List<String>> rangeMap = ringNode.getRangeMap();
-        final List<Range> ranges = ringNode.getRanges();
-        final Set<String> liveNodes = ringNode.getLiveNodes();
-        final Set<String> deadNodes = ringNode.getDeadNodes();
+        final Map<Token, String> rangeMap = ringNode.getRangeMap();
+        final List<Token> ranges = ringNode.getRanges();
+        final List<String> liveNodes = ringNode.getLiveNodes();
+        final List<String> deadNodes = ringNode.getDeadNodes();
         final Map<String, String> loadMap = ringNode.getLoadMap();
 
         final Map<Vertex, Integer> statusMap = new HashMap<Vertex, Integer>();
@@ -108,14 +109,16 @@ public class RingDialog extends JDialog {
         final Vertex[] vertices = new Vertex[rangeMap.size()];
 
         int count = 0;
-        for (Range range : ranges) {
-            List<String> endpoints = rangeMap.get(range);
-            String primaryEndpoint = endpoints.get(0);
+        for (Token range : ranges) {
+//            List<String> endpoints = rangeMap.get(range);
+            String endpoints = rangeMap.get(range);
+//            String primaryEndpoint = endpoints.get(0);
+            String primaryEndpoint = rangeMap.get(range);
             String load = loadMap.containsKey(primaryEndpoint) ? loadMap.get(primaryEndpoint) : "?";
             String label = "<html>" +
                            "Address: " + primaryEndpoint + "<br/>" +
                            "Load: " + load + "<br/>" +
-                           "Range: " + range.right.toString() +
+                           "Range: " + range.toString() +
                            "</html>";
 
             Vertex v = graph.addVertex(new UndirectedSparseVertex());

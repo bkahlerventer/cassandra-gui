@@ -6,69 +6,70 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.cassandra.dht.Range;
+import org.apache.cassandra.dht.Token;
 
 public class RingNode implements Serializable {
     private static final long serialVersionUID = 8351368757758010586L;
 
-    private Map<Range, List<String>> rangeMap;
-    private List<Range> ranges;
-    private Set<String> liveNodes;
-    private Set<String> deadNodes;
+    private Map<Token, String> rangeMap;
+    private List<Token> ranges;
+    private List<String> liveNodes;
+    private List<String> deadNodes;
     private Map<String, String> loadMap;
 
     /**
      * @return the rangeMap
      */
-    public Map<Range, List<String>> getRangeMap() {
+    public Map<Token, String> getRangeMap() {
         return rangeMap;
     }
 
     /**
      * @param rangeMap the rangeMap to set
      */
-    public void setRangeMap(Map<Range, List<String>> rangeMap) {
+    public void setRangeMap(Map<Token, String> rangeMap) {
         this.rangeMap = rangeMap;
     }
 
     /**
      * @return the ranges
      */
-    public List<Range> getRanges() {
+    public List<Token> getRanges() {
         return ranges;
     }
 
     /**
      * @param ranges the ranges to set
      */
-    public void setRanges(List<Range> ranges) {
+    public void setRanges(List<Token> ranges) {
         this.ranges = ranges;
     }
 
     /**
      * @return the liveNodes
      */
-    public Set<String> getLiveNodes() {
+    public List<String> getLiveNodes() {
         return liveNodes;
     }
 
     /**
      * @param liveNodes the liveNodes to set
      */
-    public void setLiveNodes(Set<String> liveNodes) {
+    public void setLiveNodes(List<String> liveNodes) {
         this.liveNodes = liveNodes;
     }
 
     /**
      * @return the deadNodes
      */
-    public Set<String> getDeadNodes() {
+    public List<String> getDeadNodes() {
         return deadNodes;
     }
 
     /**
      * @param deadNodes the deadNodes to set
      */
-    public void setDeadNodes(Set<String> deadNodes) {
+    public void setDeadNodes(List<String> deadNodes) {
         this.deadNodes = deadNodes;
     }
 

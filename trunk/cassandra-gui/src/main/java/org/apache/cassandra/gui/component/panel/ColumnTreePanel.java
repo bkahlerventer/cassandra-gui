@@ -18,10 +18,12 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
+
 import org.apache.cassandra.client.Client;
 import org.apache.cassandra.gui.component.dialog.action.ColumnPopupAction;
 import org.apache.cassandra.gui.control.callback.RepaintCallback;
 import org.apache.cassandra.node.TreeNode;
+import org.apache.cassandra.thrift.CfDef;
 import org.apache.cassandra.unit.Cell;
 import org.apache.cassandra.unit.Key;
 import org.apache.cassandra.unit.SColumn;
@@ -136,7 +138,7 @@ public class ColumnTreePanel extends JPanel {
     public void showRows(String keyspace, String columnFamily, String startKey, String endKey, int rows) {
         try {
             Map<String, String> m = client.getColumnFamily(keyspace, columnFamily);
-            if (m.get(COLUMN_FAMILY_TYPE).equals(COLUMN_FAMILY_TYPE_SUPER)) {
+            if (m.get(CfDef._Fields.COLUMN_TYPE.name()).equals(COLUMN_FAMILY_TYPE_SUPER)) {
                 client.setSuperColumn(true);
                 superColumn = true;
             } else {
