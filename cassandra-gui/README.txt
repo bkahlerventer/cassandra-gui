@@ -10,7 +10,7 @@ For more information see http://code.google.com/p/cassandra-gui/
 
 Requirements
 ------------
-  * Java >= 1.6 (OpenJDK and Sun have been tested)
+  * Java >= 1.6 (OpenJDK and Oracle have been tested)
 
 Getting started
 ---------------
