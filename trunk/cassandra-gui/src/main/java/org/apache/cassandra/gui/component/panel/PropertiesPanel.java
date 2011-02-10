@@ -88,7 +88,7 @@ public class PropertiesPanel extends JPanel {
     private static final String COLUMN_CONFIG_FILE = "config file";
     private static final String COLUMN_RING = "ring";
     private static final String COLUMN_DOUBLE_CLICK_VALUE = "view the details by double-clicking";
-    private static final String COLUMN_NUMBER_OF_CALUMN_FAMILY = "Number of CalumnFamily";
+    private static final String COLUMN_NUMBER_OF_COLUMN_FAMILY = "Number of Column Family";
 
     private static final String[] columns = { "name", "value" };
 
@@ -190,7 +190,7 @@ public class PropertiesPanel extends JPanel {
         try {
             tableModel.setRowCount(0);
             int n = client.getColumnFamilys(keyspace).size();
-            tableModel.addRow(new String[] {COLUMN_NUMBER_OF_CALUMN_FAMILY, String.valueOf(n)});
+            tableModel.addRow(new String[] {COLUMN_NUMBER_OF_COLUMN_FAMILY, String.valueOf(n)});
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
             e.printStackTrace();
