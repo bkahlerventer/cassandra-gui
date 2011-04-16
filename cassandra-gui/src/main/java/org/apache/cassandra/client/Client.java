@@ -3,16 +3,37 @@ package org.apache.cassandra.client;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.management.MemoryUsage;
-import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.apache.cassandra.concurrent.IExecutorMBean;
 import org.apache.cassandra.dht.Range;
-import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.node.NodeInfo;
 import org.apache.cassandra.node.RingNode;
 import org.apache.cassandra.node.Tpstats;
-import org.apache.cassandra.thrift.*;
+import org.apache.cassandra.thrift.Cassandra;
+import org.apache.cassandra.thrift.Column;
+import org.apache.cassandra.thrift.ColumnOrSuperColumn;
+import org.apache.cassandra.thrift.ColumnParent;
+import org.apache.cassandra.thrift.ColumnPath;
+import org.apache.cassandra.thrift.ConsistencyLevel;
+import org.apache.cassandra.thrift.InvalidRequestException;
+import org.apache.cassandra.thrift.KeyRange;
+import org.apache.cassandra.thrift.KeySlice;
+import org.apache.cassandra.thrift.NotFoundException;
+import org.apache.cassandra.thrift.SlicePredicate;
+import org.apache.cassandra.thrift.SliceRange;
+import org.apache.cassandra.thrift.SuperColumn;
+import org.apache.cassandra.thrift.TimedOutException;
+import org.apache.cassandra.thrift.TokenRange;
+import org.apache.cassandra.thrift.UnavailableException;
 import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.unit.Cell;
 import org.apache.cassandra.unit.Key;
@@ -20,15 +41,10 @@ import org.apache.cassandra.unit.SColumn;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
-/**
- * Client class to interact with Cassandara cluster
- *
- */
 public class Client {
     public static final String DEFAULT_THRIFT_HOST = "localhost";
     public static final int DEFAULT_THRIFT_PORT = 9160;
@@ -65,8 +81,7 @@ public class Client {
     public void connect()
             throws TTransportException, IOException, InterruptedException {
         if (!connected) {
-            // Updating the transport to Framed one as it has been depreciated with Cassandra 0.7.0
-            transport = new TFramedTransport(new TSocket(host, thriftPort));
+            transport = new TSocket(host, thriftPort);
             protocol = new TBinaryProtocol(transport);
             client = new Cassandra.Client(protocol);
             probe = new NodeProbe(host, jmxPort);
@@ -94,10 +109,12 @@ public class Client {
         return client.describe_version();
     }
 
+    public String getTokenMap() throws TException {
+        return client.get_string_property("token map");
+    }
+
     public String getConfigFile() throws TException {
-//        return client.get_string_property("config file");
-        // TODO - find the right fit
-        return client.describe_cluster_name();
+        return client.get_string_property("config file");
     }
 
     public List<TokenRange> describeRing(String keyspace)
@@ -108,8 +125,10 @@ public class Client {
 
     public RingNode listRing() {
         RingNode r = new RingNode();
-        r.setRangeMap(probe.getTokenToEndpointMap());
-        List<Token> ranges = new ArrayList<Token>(r.getRangeMap().keySet());
+
+        r.setRangeMap(probe.getRangeToEndPointMap(null));
+
+        List<Range> ranges = new ArrayList<Range>(r.getRangeMap().keySet());
         Collections.sort(ranges);
         r.setRanges(ranges);
 
@@ -157,58 +176,26 @@ public class Client {
         return l;
     }
 
-    public List<KsDef> getKeyspaces() throws TException, InvalidRequestException {
+    public Set<String> getKeyspaces() throws TException {
         return client.describe_keyspaces();
     }
 
-    /**
-     *
-     * Retrieve Column metadata from a given keyspace
-     *
-     * @param keyspace
-     * @param columnFamily
-     * @return
-     * @throws NotFoundException
-     * @throws TException
-     * @throws InvalidRequestException
-     */
     public Map<String, String> getColumnFamily(String keyspace, String columnFamily)
-            throws NotFoundException, TException, InvalidRequestException {
+                throws NotFoundException, TException {
         this.keyspace = keyspace;
         this.columnFamily = columnFamily;
-
-        for (Iterator<CfDef> cfIterator = client.describe_keyspace(keyspace).getCf_defsIterator(); cfIterator.hasNext();) {
-            CfDef next = cfIterator.next();
-            if (columnFamily.equalsIgnoreCase(next.getName())) {
-                Map<String, String> columnMetadata = new HashMap<String, String>();
-
-                CfDef._Fields[] fields = CfDef._Fields.values();
-
-                for (int i = 0; i < fields.length; i++) {
-                    CfDef._Fields field = fields[i];
-                    // using string concat to avoin NPE, if the value is not null
-                    // need to find an elegant solution
-                    columnMetadata.put(field.name(), next.getFieldValue(field)+"");
-                }
-
-                return columnMetadata;
-
-            }
-        }
-        System.out.println("returning null");
-        return null;
+        return client.describe_keyspace(keyspace).get(columnFamily);
     }
 
     public Set<String> getColumnFamilys(String keyspace)
-            throws NotFoundException, TException, InvalidRequestException {
+            throws NotFoundException, TException {
         this.keyspace = keyspace;
 
         Set<String> s = new TreeSet<String>();
-
-        for (Iterator<CfDef> cfIterator = client.describe_keyspace(keyspace).getCf_defsIterator(); cfIterator.hasNext();) {
-           CfDef next =  cfIterator.next();
-           s.add(next.getName());
+        for (Map.Entry<String, Map<String, String>> entry : client.describe_keyspace(keyspace).entrySet()) {
+            s.add(entry.getKey());
         }
+
         return s;
     }
 
@@ -218,8 +205,7 @@ public class Client {
         this.columnFamily = columnFamily;
 
         ColumnParent colParent = new ColumnParent(columnFamily);
-        //TODO - Verify if its working fine
-        return client.get_count(ByteBuffer.wrap(key.getBytes()), colParent, null, ConsistencyLevel.ONE);
+        return client.get_count(keyspace, key, colParent, ConsistencyLevel.ONE);
     }
 
     public int countSuperColumnsRecord(String keyspace, String columnFamily, String superColumn, String key)
@@ -229,8 +215,7 @@ public class Client {
 
         ColumnParent colParent = new ColumnParent(columnFamily);
         colParent.setSuper_column(superColumn.getBytes());
-        // TODO - verify if its working fine
-        return client.get_count(ByteBuffer.wrap(key.getBytes()), colParent, null, ConsistencyLevel.ONE);
+        return client.get_count(keyspace, key, colParent, ConsistencyLevel.ONE);
     }
 
     public Date insertColumn(String keyspace,
@@ -243,24 +228,13 @@ public class Client {
         this.keyspace = keyspace;
         this.columnFamily = columnFamily;
 
-        ColumnParent parent;
-
-        if(superColumn == null) {
-           parent = new ColumnParent(columnFamily);
-        } else {
-            parent = new ColumnParent(superColumn);
+        ColumnPath colPath = new ColumnPath(columnFamily);
+        if (superColumn != null) {
+            colPath.setSuper_column(superColumn.getBytes());
         }
-
-//        ColumnPath colPath = new ColumnPath(columnFamily);
-//        if (superColumn != null) {
-//            colPath.setSuper_column(superColumn.getBytes());
-//        }
-//        colPath.setColumn(column.getBytes());
+        colPath.setColumn(column.getBytes());
         long timestamp = System.currentTimeMillis() * 1000;
-
-        Column col = new Column(ByteBuffer.wrap(key.getBytes()), ByteBuffer.wrap(value.getBytes()), timestamp);
-
-        client.insert(ByteBuffer.wrap(key.getBytes()), parent, col, ConsistencyLevel.ONE);
+        client.insert(keyspace, key, colPath, value.getBytes(), timestamp, ConsistencyLevel.ONE);
 
         return new Date(timestamp / 1000);
     }
@@ -272,7 +246,7 @@ public class Client {
 
         ColumnPath colPath = new ColumnPath(columnFamily);
         long timestamp = System.currentTimeMillis() * 1000;
-        client.remove(ByteBuffer.wrap(key.getBytes()), colPath, timestamp, ConsistencyLevel.ONE);
+        client.remove(keyspace, key, colPath, timestamp, ConsistencyLevel.ONE);
     }
 
     public void removeSuperColumn(String keyspace, String columnFamily, String key, String superColumn)
@@ -280,7 +254,7 @@ public class Client {
         ColumnPath colPath = new ColumnPath(columnFamily);
         colPath.setSuper_column(superColumn.getBytes());
         long timestamp = System.currentTimeMillis() * 1000;
-        client.remove(ByteBuffer.wrap(key.getBytes()), colPath, timestamp, ConsistencyLevel.ONE);
+        client.remove(keyspace, key, colPath, timestamp, ConsistencyLevel.ONE);
     }
 
     public void removeColumn(String keyspace, String columnFamily, String key, String column)
@@ -291,7 +265,7 @@ public class Client {
         ColumnPath colPath = new ColumnPath(columnFamily);
         colPath.setColumn(column.getBytes());
         long timestamp = System.currentTimeMillis() * 1000;
-        client.remove(ByteBuffer.wrap(key.getBytes()), colPath, timestamp, ConsistencyLevel.ONE);
+        client.remove(keyspace, key, colPath, timestamp, ConsistencyLevel.ONE);
     }
 
     public void removeColumn(String keyspace, String columnFamily, String key, String superColumn, String column)
@@ -303,7 +277,7 @@ public class Client {
         colPath.setSuper_column(superColumn.getBytes());
         colPath.setColumn(column.getBytes());
         long timestamp = System.currentTimeMillis() * 1000;
-        client.remove(ByteBuffer.wrap(key.getBytes()), colPath, timestamp, ConsistencyLevel.ONE);
+        client.remove(keyspace, key, colPath, timestamp, ConsistencyLevel.ONE);
     }
 
     public Map<String, Key> getKey(String keyspace, String columnFamily, String superColumn, String key)
@@ -326,7 +300,7 @@ public class Client {
         slicePredicate.setSlice_range(sliceRange);
 
         List<ColumnOrSuperColumn> l =
-            client.get_slice(ByteBuffer.wrap(key.getBytes()), columnParent, slicePredicate, ConsistencyLevel.ONE);
+            client.get_slice(keyspace, key, columnParent, slicePredicate, ConsistencyLevel.ONE);
 
         Key k = new Key(key, new TreeMap<String, SColumn>(), new TreeMap<String, Cell>());
         for (ColumnOrSuperColumn column : l) {
@@ -368,8 +342,8 @@ public class Client {
         ColumnParent columnParent = new ColumnParent(columnFamily);
 
         KeyRange keyRange = new KeyRange(rows);
-        keyRange.setStart_key(ByteBuffer.wrap(startKey.getBytes()));
-        keyRange.setEnd_key(ByteBuffer.wrap(endKey.getBytes()));
+        keyRange.setStart_key(startKey);
+        keyRange.setEnd_key(endKey);
 
         SliceRange sliceRange = new SliceRange();
         sliceRange.setStart(new byte[0]);
@@ -377,11 +351,11 @@ public class Client {
 
         SlicePredicate slicePredicate = new SlicePredicate();
         slicePredicate.setSlice_range(sliceRange);
-        client.set_keyspace(keyspace);
+
         List<KeySlice> keySlices =
-            client.get_range_slices(columnParent, slicePredicate, keyRange, ConsistencyLevel.ONE);
+            client.get_range_slices(keyspace, columnParent, slicePredicate, keyRange, ConsistencyLevel.ONE);
         for (KeySlice keySlice : keySlices) {
-            Key key = new Key(new String(keySlice.getKey()), new TreeMap<String, SColumn>(), new TreeMap<String, Cell>());
+            Key key = new Key(keySlice.getKey(), new TreeMap<String, SColumn>(), new TreeMap<String, Cell>());
 
             for (ColumnOrSuperColumn column : keySlice.getColumns()) {
                 key.setSuperColumn(column.isSetSuper_column());

@@ -30,14 +30,9 @@ import org.apache.cassandra.gui.component.dialog.KeyRangeDialog;
 import org.apache.cassandra.gui.control.callback.PropertiesCallback;
 import org.apache.cassandra.gui.control.callback.RepaintCallback;
 import org.apache.cassandra.gui.control.callback.SelectedColumnFamilyCallback;
-import org.apache.cassandra.thrift.InvalidRequestException;
-import org.apache.cassandra.thrift.KsDef;
 import org.apache.cassandra.thrift.NotFoundException;
 import org.apache.thrift.TException;
 
-/**
- * The keyspace panel
- */
 public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
     private static final long serialVersionUID = 5481365703729222288L;
 
@@ -155,29 +150,20 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
             tree.addMouseListener(new MousePopup());
             tree.addTreeSelectionListener(this);
 
-            List<KsDef> ks = null;
-            try {
-                ks = new ArrayList<KsDef>(client.getKeyspaces());
-            } catch (InvalidRequestException e) {
-                //TODO - Handle eligantly
-                e.printStackTrace();
-            }
+            List<String> ks = new ArrayList<String>(client.getKeyspaces());
             Collections.sort(ks);
-            for (KsDef keyspace : ks) {
-                DefaultMutableTreeNode keyspaceNode = new DefaultMutableTreeNode(keyspace.getName());
+            for (String keyspace : ks) {
+                DefaultMutableTreeNode keyspaceNode = new DefaultMutableTreeNode(keyspace);
                 clusterNode.add(keyspaceNode);
                 try {
-                    Set<String> cfs = client.getColumnFamilys(keyspace.getName());
+                    Set<String> cfs = client.getColumnFamilys(keyspace);
                     for (String columnFamily : cfs) {
                         keyspaceNode.add(new DefaultMutableTreeNode(columnFamily));
-                        keyspaceMap.put(columnFamily, keyspace.getName());
+                        keyspaceMap.put(columnFamily, keyspace);
                     }
                 } catch (NotFoundException e) {
                     JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
                     e.printStackTrace();
-                } catch (InvalidRequestException invReq) {
-                    JOptionPane.showMessageDialog(null, "error: " + invReq.getMessage());
-                    invReq.printStackTrace();
                 }
             }
         } catch (TException e) {

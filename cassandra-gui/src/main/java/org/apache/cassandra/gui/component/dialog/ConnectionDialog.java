@@ -6,13 +6,16 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 import org.apache.cassandra.client.Client;
 
-/**
- * Connection Dialogue class to connect to the Cassandra cluster
- */
 public class ConnectionDialog extends JDialog {
     private static final long serialVersionUID = 8707158056959280058L;
 
@@ -40,11 +43,11 @@ public class ConnectionDialog extends JDialog {
         jmxPortTextField.addActionListener(new EnterAction());
 
         JPanel inputPanel = new JPanel(new GridLayout(3, 2));
-        inputPanel.add(new JLabel("Host:"));
+        inputPanel.add(new JLabel("host:"));
         inputPanel.add(hostText);
-        inputPanel.add(new JLabel("Thrift Port:"));
+        inputPanel.add(new JLabel("thrift port:"));
         inputPanel.add(thriftPortText);
-        inputPanel.add(new JLabel("JMX Port:"));
+        inputPanel.add(new JLabel("jmx port:"));
         inputPanel.add(jmxPortTextField);
 
         ok.addActionListener(new ActionListener() {
@@ -67,25 +70,22 @@ public class ConnectionDialog extends JDialog {
         buttonPanel.add(cancel);
 
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(new JLabel("Connection Details"), BorderLayout.NORTH);
+        panel.add(new JLabel("connect"), BorderLayout.NORTH);
         panel.add(inputPanel, BorderLayout.CENTER);
         panel.add(buttonPanel, BorderLayout.SOUTH);
-
-        inputPanel.setBorder(BorderFactory.createEtchedBorder());
-        buttonPanel.setBorder(BorderFactory.createEtchedBorder());
 
         add(panel);
 
         pack();
         setModalityType(ModalityType.DOCUMENT_MODAL);
-        setTitle("Connection Details");
+        setTitle("Connect");
         setLocationRelativeTo(null);
         setVisible(true);
     }
 
     private void enterAction() {
         if (hostText.getText().isEmpty()){
-            JOptionPane.showMessageDialog(null, "Enter Hostname.");
+            JOptionPane.showMessageDialog(null, "enter host name.");
             return;
         }
 
@@ -103,7 +103,7 @@ public class ConnectionDialog extends JDialog {
         try {
             client.connect();
         } catch (Exception e1) {
-            JOptionPane.showMessageDialog(null, "Connection failed.");
+            JOptionPane.showMessageDialog(null, "connection faild.");
             e1.printStackTrace();
             return;
         }
