@@ -6,7 +6,9 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -26,8 +28,8 @@ import javax.swing.table.TableRowSorter;
 
 import org.apache.cassandra.client.Client;
 import org.apache.cassandra.gui.component.dialog.RingDialog;
-import org.apache.cassandra.gui.component.dialog.ShowConfigDialog;
 import org.apache.cassandra.gui.control.callback.RepaintCallback;
+import org.apache.cassandra.thrift.KsDef;
 
 public class PropertiesPanel extends JPanel {
     private static final long serialVersionUID = 1452324774722196104L;
@@ -83,11 +85,16 @@ public class PropertiesPanel extends JPanel {
         }
     }
 
+    private static final String COLUMN_SNITCH = "Snitch";
+    private static final String COLUMN_PARTITIONER = "Partitioner";
+    private static final String COLUMN_SCHEMA_VERSIONS = "Schema versions: ";
     private static final String COLUMN_VERSION = "api version";
     private static final String COLUMN_NUMBER_OF_KEYSPACE = "Number of Keyspace";
-    private static final String COLUMN_CONFIG_FILE = "config file";
     private static final String COLUMN_RING = "ring";
     private static final String COLUMN_DOUBLE_CLICK_VALUE = "view the details by double-clicking";
+
+    private static final String COLUMN_REPLICATION_STRATEGY = "Replication Strategy";
+    private static final String COLUMN_REPLICATION_FACTOR = "Replication Factor";
     private static final String COLUMN_NUMBER_OF_COLUMN_FAMILY = "Number of Column Family";
 
     private static final String[] columns = { "name", "value" };
@@ -130,11 +137,7 @@ public class PropertiesPanel extends JPanel {
                     Point point = me.getPoint();
                     int row = table.convertRowIndexToModel(table.rowAtPoint(point));
                     try {
-                        if (tableModel.getValueAt(row, 0).equals(COLUMN_CONFIG_FILE)) {
-                            String str = client.getConfigFile();
-                            ShowConfigDialog dlg = new ShowConfigDialog(str);
-                            dlg.setVisible(true);
-                        } else if (tableModel.getValueAt(row, 0).equals(COLUMN_RING)) {
+                        if (tableModel.getValueAt(row, 0).equals(COLUMN_RING)) {
                             RingDialog rd = new RingDialog(client);
                             rd.setVisible(true);
                         }
@@ -172,11 +175,26 @@ public class PropertiesPanel extends JPanel {
     public void showClusterProperties() {
         try {
             tableModel.setRowCount(0);
+
+            tableModel.addRow(new String[] {COLUMN_SNITCH, client.describeSnitch()});
+            tableModel.addRow(new String[] {COLUMN_PARTITIONER, client.describePartitioner()});
+
+            Map<String, List<String>> m = client.describeSchemaVersions();
+            if (m != null) {
+                for (Entry<String, List<String>> entry : m.entrySet()) {
+                    if (entry.getKey() != null) {
+                        for (String s : entry.getValue()) {
+                            tableModel.addRow(new String[] {COLUMN_SCHEMA_VERSIONS + entry.getKey(), s});
+                        }
+                    }
+                }
+            }
+
             tableModel.addRow(new String[] {COLUMN_VERSION, client.descriveVersion()});
             int n = client.getKeyspaces().size();
             tableModel.addRow(new String[] {COLUMN_NUMBER_OF_KEYSPACE, String.valueOf(n)});
-            tableModel.addRow(new String[] {COLUMN_CONFIG_FILE, COLUMN_DOUBLE_CLICK_VALUE});
             tableModel.addRow(new String[] {COLUMN_RING, COLUMN_DOUBLE_CLICK_VALUE});
+
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
             e.printStackTrace();
@@ -189,8 +207,18 @@ public class PropertiesPanel extends JPanel {
     public void showKeyspaceProperties(String keyspace) {
         try {
             tableModel.setRowCount(0);
+            KsDef kd = client.describeKeyspace(keyspace);
+
+            tableModel.addRow(new String[] {COLUMN_REPLICATION_FACTOR, String.valueOf(kd.getReplication_factor())});
+            tableModel.addRow(new String[] {COLUMN_REPLICATION_STRATEGY, kd.getStrategy_class()});
             int n = client.getColumnFamilys(keyspace).size();
             tableModel.addRow(new String[] {COLUMN_NUMBER_OF_COLUMN_FAMILY, String.valueOf(n)});
+
+            if (kd.getStrategy_options() != null) {
+                for (Entry<String, String> entry : kd.getStrategy_options().entrySet()) {
+                    tableModel.addRow(new String[] {entry.getKey(), entry.getValue()});
+                }
+            }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
             e.printStackTrace();
@@ -213,7 +241,7 @@ public class PropertiesPanel extends JPanel {
             return;
         }
 
-        repaint();        
+        repaint();
     }
 
     /**
