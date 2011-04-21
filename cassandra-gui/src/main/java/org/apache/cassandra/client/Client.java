@@ -47,8 +47,6 @@ public class Client {
     private String columnFamily;
     private boolean superColumn;
 
-    private Map<String, String> strategyMap = new TreeMap<String, String>();
-
     public Client() {
         this(DEFAULT_THRIFT_HOST, DEFAULT_THRIFT_PORT, DEFAULT_JMX_PORT);
     }
@@ -61,11 +59,6 @@ public class Client {
         this.host = host;
         this.thriftPort = thriftPort;
         this.jmxPort = jmxPort;
-
-        strategyMap.put("SimpleStrategy", "org.apache.cassandra.locator.SimpleStrategy");
-        strategyMap.put("LocalStrategy", "org.apache.cassandra.locator.LocalStrategy");
-        strategyMap.put("NetworkTopologyStrategy", "org.apache.cassandra.locator.NetworkTopologyStrategy");
-        strategyMap.put("OldNetworkTopologyStrategy", "org.apache.cassandra.locator.OldNetworkTopologyStrategy");
     }
 
     public void connect()
@@ -187,6 +180,10 @@ public class Client {
         }
 
         client.system_add_keyspace(ksDef);
+    }
+
+    public void dropKeyspace(String keyspaceName) throws InvalidRequestException, TException {
+        client.system_drop_keyspace(keyspaceName);
     }
 
     /**
@@ -480,7 +477,12 @@ public class Client {
     /**
      * @return the strategyMap
      */
-    public Map<String, String> getStrategyMap() {
+    public static Map<String, String> getStrategyMap() {
+        Map<String, String> strategyMap = new TreeMap<String, String>();
+        strategyMap.put("SimpleStrategy", "org.apache.cassandra.locator.SimpleStrategy");
+        strategyMap.put("LocalStrategy", "org.apache.cassandra.locator.LocalStrategy");
+        strategyMap.put("NetworkTopologyStrategy", "org.apache.cassandra.locator.NetworkTopologyStrategy");
+        strategyMap.put("OldNetworkTopologyStrategy", "org.apache.cassandra.locator.OldNetworkTopologyStrategy");
         return strategyMap;
     }
 }
