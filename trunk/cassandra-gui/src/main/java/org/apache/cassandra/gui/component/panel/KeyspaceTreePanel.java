@@ -27,6 +27,7 @@ import javax.swing.tree.TreePath;
 import org.apache.cassandra.client.Client;
 import org.apache.cassandra.gui.component.dialog.KeyDialog;
 import org.apache.cassandra.gui.component.dialog.KeyRangeDialog;
+import org.apache.cassandra.gui.component.dialog.KeyspaceDialog;
 import org.apache.cassandra.gui.control.callback.PropertiesCallback;
 import org.apache.cassandra.gui.control.callback.RepaintCallback;
 import org.apache.cassandra.gui.control.callback.SelectedColumnFamilyCallback;
@@ -47,6 +48,7 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
         public static final int OPERATION_ROWS = 1;
         public static final int OPERATION_KEYRANGE = 2;
         public static final int OPERATION_KEY = 3;
+        public static final int OPERATION_CREATE_OR_UPDATE_KEYSPACE = 4;
 
         public static final int ROWS_1000 = 1000;
 
@@ -59,14 +61,21 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            if (lastSelectedKeysapce == null ||
-                lastSelectedColumnFamily == null) {
-                return;
-            }
-
             switch (operation) {
+            case OPERATION_CREATE_OR_UPDATE_KEYSPACE:
+                KeyspaceDialog ksd = new KeyspaceDialog();
+                ksd.setVisible(true);
+                if (ksd.isCancel()) {
+                    return;
+                }
+                break;
             case OPERATION_ROWS:
             case OPERATION_KEYRANGE:
+                if (lastSelectedKeysapce == null ||
+                    lastSelectedColumnFamily == null) {
+                    return;
+                }
+
                 String startKey = "";
                 String endKey = "";
 
@@ -88,6 +97,11 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                                         ROWS_1000);
                 break;
             case OPERATION_KEY:
+                if (lastSelectedKeysapce == null ||
+                    lastSelectedColumnFamily == null) {
+                    return;
+                }
+
                 KeyDialog kd = new KeyDialog();
                 kd.setVisible(true);
                 if (kd.isCancel()) {
@@ -114,7 +128,11 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                 tree.setSelectionPath(path);
                 DefaultMutableTreeNode node =
                     (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
-                if (node != null && node.getChildCount() == 0) {
+                if (node != null && node.getParent() == null) {
+                    JPopupMenu popup = new JPopupMenu();
+                    popup.add(new PopupAction("create or update keysapce", PopupAction.OPERATION_CREATE_OR_UPDATE_KEYSPACE));
+                    popup.show(e.getComponent(), e.getX(), e.getY());
+                } else if (node != null && node.getChildCount() == 0) {
                     String columnFamily = (String) node.getUserObject();
                     lastSelectedKeysapce = keyspaceMap.get(columnFamily);
                     lastSelectedColumnFamily = columnFamily;
@@ -136,7 +154,7 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
     private static final int TREE_KEYSPACE = 2;
     private static final int TREE_COLUMN_FAMILY = 3;
 
-    private PropertiesCallback propertiesCallback; 
+    private PropertiesCallback propertiesCallback;
     private SelectedColumnFamilyCallback cCallback;
     private RepaintCallback rCallback;
 
