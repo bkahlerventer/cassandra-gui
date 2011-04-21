@@ -7,7 +7,6 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 import org.apache.cassandra.concurrent.IExecutorMBean;
-import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.node.NodeInfo;
 import org.apache.cassandra.node.RingNode;
@@ -48,6 +47,8 @@ public class Client {
     private String columnFamily;
     private boolean superColumn;
 
+    private Map<String, String> strategyMap = new TreeMap<String, String>();
+
     public Client() {
         this(DEFAULT_THRIFT_HOST, DEFAULT_THRIFT_PORT, DEFAULT_JMX_PORT);
     }
@@ -60,6 +61,11 @@ public class Client {
         this.host = host;
         this.thriftPort = thriftPort;
         this.jmxPort = jmxPort;
+
+        strategyMap.put("SimpleStrategy", "org.apache.cassandra.locator.SimpleStrategy");
+        strategyMap.put("LocalStrategy", "org.apache.cassandra.locator.LocalStrategy");
+        strategyMap.put("NetworkTopologyStrategy", "org.apache.cassandra.locator.NetworkTopologyStrategy");
+        strategyMap.put("OldNetworkTopologyStrategy", "org.apache.cassandra.locator.OldNetworkTopologyStrategy");
     }
 
     public void connect()
@@ -167,12 +173,20 @@ public class Client {
         return client.describe_keyspaces();
     }
 
-    public KsDef describeKeyspace(String name) throws NotFoundException, InvalidRequestException, TException {
-        return client.describe_keyspace(name);
+    public KsDef describeKeyspace(String keyspaceName) throws NotFoundException, InvalidRequestException, TException {
+        return client.describe_keyspace(keyspaceName);
     }
 
-    public void createKeyspace(String name) throws InvalidRequestException, TException {
-        client.system_add_keyspace(null);
+    public void updateKeyspace(String keyspaceName,
+                               String strategy,
+                               Map<String, String> strategyOptions,
+                               int replicationFactgor) throws InvalidRequestException, TException {
+        KsDef ksDef = new KsDef(keyspaceName, strategy, replicationFactgor, new LinkedList<CfDef>());
+        if (strategyOptions != null) {
+            ksDef.setStrategy_options(strategyOptions);
+        }
+
+        client.system_add_keyspace(ksDef);
     }
 
     /**
@@ -265,13 +279,7 @@ public class Client {
             parent = new ColumnParent(superColumn);
         }
 
-//        ColumnPath colPath = new ColumnPath(columnFamily);
-//        if (superColumn != null) {
-//            colPath.setSuper_column(superColumn.getBytes());
-//        }
-//        colPath.setColumn(column.getBytes());
         long timestamp = System.currentTimeMillis() * 1000;
-
         Column col = new Column(ByteBuffer.wrap(key.getBytes()), ByteBuffer.wrap(value.getBytes()), timestamp);
 
         client.insert(ByteBuffer.wrap(key.getBytes()), parent, col, ConsistencyLevel.ONE);
@@ -467,5 +475,12 @@ public class Client {
      */
     public void setSuperColumn(boolean superColumn) {
         this.superColumn = superColumn;
+    }
+
+    /**
+     * @return the strategyMap
+     */
+    public Map<String, String> getStrategyMap() {
+        return strategyMap;
     }
 }
