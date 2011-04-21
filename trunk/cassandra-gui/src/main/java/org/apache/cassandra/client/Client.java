@@ -94,10 +94,16 @@ public class Client {
         return client.describe_version();
     }
 
-    public String getConfigFile() throws TException {
-//        return client.get_string_property("config file");
-        // TODO - find the right fit
-        return client.describe_cluster_name();
+    public String describeSnitch() throws TException {
+        return client.describe_snitch();
+    }
+
+    public Map<String,List<String>> describeSchemaVersions() throws InvalidRequestException, TException {
+        return client.describe_schema_versions();
+    }
+
+    public String describePartitioner() throws TException {
+        return client.describe_partitioner();
     }
 
     public List<TokenRange> describeRing(String keyspace)
@@ -159,6 +165,14 @@ public class Client {
 
     public List<KsDef> getKeyspaces() throws TException, InvalidRequestException {
         return client.describe_keyspaces();
+    }
+
+    public KsDef describeKeyspace(String name) throws NotFoundException, InvalidRequestException, TException {
+        return client.describe_keyspace(name);
+    }
+
+    public void createKeyspace(String name) throws InvalidRequestException, TException {
+        client.system_add_keyspace(null);
     }
 
     /**
@@ -355,7 +369,7 @@ public class Client {
             m.put(k.getName(), k);
         }
 
-        return m; 
+        return m;
     }
 
     public Map<String, Key> listKeyAndValues(String keyspace, String columnFamily, String startKey, String endKey, int rows)
