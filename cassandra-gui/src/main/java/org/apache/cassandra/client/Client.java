@@ -170,6 +170,18 @@ public class Client {
         return client.describe_keyspace(keyspaceName);
     }
 
+    public void addKeyspace(String keyspaceName,
+                            String strategy,
+                            Map<String, String> strategyOptions,
+                            int replicationFactgor) throws InvalidRequestException, TException {
+        KsDef ksDef = new KsDef(keyspaceName, strategy, replicationFactgor, new LinkedList<CfDef>());
+        if (strategyOptions != null) {
+            ksDef.setStrategy_options(strategyOptions);
+        }
+
+        client.system_add_keyspace(ksDef);
+    }
+
     public void updateKeyspace(String keyspaceName,
                                String strategy,
                                Map<String, String> strategyOptions,
@@ -179,7 +191,7 @@ public class Client {
             ksDef.setStrategy_options(strategyOptions);
         }
 
-        client.system_add_keyspace(ksDef);
+        client.system_update_keyspace(ksDef);
     }
 
     public void dropKeyspace(String keyspaceName) throws InvalidRequestException, TException {

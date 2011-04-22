@@ -6,9 +6,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.swing.AbstractAction;
@@ -22,6 +20,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
 import org.apache.cassandra.client.Client;
@@ -48,26 +47,101 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
         public static final int OPERATION_ROWS = 1;
         public static final int OPERATION_KEYRANGE = 2;
         public static final int OPERATION_KEY = 3;
-        public static final int OPERATION_CREATE_OR_UPDATE_KEYSPACE = 4;
+        public static final int OPERATION_CREATE_KEYSPACE = 4;
+        public static final int OPERATION_REMOVE_KEYSPACE = 5;
+        public static final int OPERATION_UPDATE_KEYSPACE = 6;
 
         public static final int ROWS_1000 = 1000;
 
         private int operation;
+        private DefaultMutableTreeNode node;
 
-        public PopupAction(String name, int operation) {
+        public PopupAction(String name, int operation, DefaultMutableTreeNode node) {
             this.operation = operation;
+            this.node = node;
             putValue(Action.NAME, name);
         }
 
         @Override
         public void actionPerformed(ActionEvent e) {
+            KeyspaceDialog ksd = null;
             switch (operation) {
-            case OPERATION_CREATE_OR_UPDATE_KEYSPACE:
-                KeyspaceDialog ksd = new KeyspaceDialog();
+            case OPERATION_CREATE_KEYSPACE:
+                ksd = new KeyspaceDialog();
                 ksd.setVisible(true);
                 if (ksd.isCancel()) {
                     return;
                 }
+
+                try {
+                    client.addKeyspace(ksd.getKeyspaceName(),
+                                       ksd.getStrategy(),
+                                       ksd.getStrategyOptions(),
+                                       ksd.getReplicationFactor());
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "error: " + ex.toString());
+                    ex.printStackTrace();
+                    return;
+                }
+
+                node.add(new DefaultMutableTreeNode(ksd.getKeyspaceName()));
+                treeModel.reload(node);
+                break;
+            case OPERATION_UPDATE_KEYSPACE:
+                KsDef ksDef;
+                try {
+                    ksDef = client.describeKeyspace(lastSelectedKeysapce);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "error: " + ex.toString());
+                    ex.printStackTrace();
+                    return;
+                }
+
+                ksd = new KeyspaceDialog(lastSelectedKeysapce,
+                                         ksDef.getReplication_factor(),
+                                         ksDef.getStrategy_class(),
+                                         ksDef.getStrategy_options());
+                ksd.setVisible(true);
+                if (ksd.isCancel()) {
+                    return;
+                }
+
+                try {
+                    client.updateKeyspace(ksd.getKeyspaceName(),
+                                          ksd.getStrategy(),
+                                          ksd.getStrategyOptions(),
+                                          ksd.getReplicationFactor());
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "error: " + ex.toString());
+                    ex.printStackTrace();
+                    return;
+                }
+
+                propertiesCallback.keyspaceCallback(lastSelectedKeysapce);
+                break;
+            case OPERATION_REMOVE_KEYSPACE:
+                if (lastSelectedKeysapce == null) {
+                        return;
+                }
+                int status = JOptionPane.showConfirmDialog(null,
+                                                           "Delete a keyspace " + lastSelectedKeysapce + "?",
+                                                           "confirm",
+                                                           JOptionPane.YES_NO_OPTION,
+                                                           JOptionPane.QUESTION_MESSAGE);
+                if (status == JOptionPane.YES_OPTION) {
+                    try {
+                        client.dropKeyspace(lastSelectedKeysapce);
+                        deletedKeyspace = lastSelectedKeysapce;
+                        DefaultMutableTreeNode parent = (DefaultMutableTreeNode) node.getParent();
+                        node.removeFromParent();
+                        treeModel.reload(parent);
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(null, "error: " + ex.toString());
+                        ex.printStackTrace();
+                        return;
+                    }
+                }
+
                 break;
             case OPERATION_ROWS:
             case OPERATION_KEYRANGE:
@@ -128,23 +202,33 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                 tree.setSelectionPath(path);
                 DefaultMutableTreeNode node =
                     (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
-                if (node != null && node.getParent() == null) {
-                    JPopupMenu popup = new JPopupMenu();
-                    popup.add(new PopupAction("create or update keysapce", PopupAction.OPERATION_CREATE_OR_UPDATE_KEYSPACE));
+                JPopupMenu popup = new JPopupMenu();
+                switch (path.getPathCount()) {
+                case TREE_CLUSTER:
+                    popup.add(new PopupAction("create keysapce", PopupAction.OPERATION_CREATE_KEYSPACE, node));
                     popup.show(e.getComponent(), e.getX(), e.getY());
-                } else if (node != null && node.getChildCount() == 0) {
+                    break;
+                case TREE_KEYSPACE:
+                    lastSelectedKeysapce = (String) node.getUserObject();
+                    popup.add(new PopupAction("properties", PopupAction.OPERATION_UPDATE_KEYSPACE, node));
+                    popup.add(new PopupAction("remove", PopupAction.OPERATION_REMOVE_KEYSPACE, node));
+                    popup.show(e.getComponent(), e.getX(), e.getY());
+                    break;
+                case TREE_COLUMN_FAMILY:
                     String columnFamily = (String) node.getUserObject();
-                    lastSelectedKeysapce = keyspaceMap.get(columnFamily);
+                    DefaultMutableTreeNode parent = (DefaultMutableTreeNode) node.getParent();
+                    lastSelectedKeysapce = (String) parent.getUserObject();
                     lastSelectedColumnFamily = columnFamily;
 
-                    JPopupMenu popup = new JPopupMenu();
-                    popup.add(new PopupAction("show 1000 rows", PopupAction.OPERATION_ROWS));
-                    popup.add(new PopupAction("key range rows", PopupAction.OPERATION_KEYRANGE));
-                    popup.add(new PopupAction("get key", PopupAction.OPERATION_KEY));
+                    popup.add(new PopupAction("show 1000 rows", PopupAction.OPERATION_ROWS, node));
+                    popup.add(new PopupAction("key range rows", PopupAction.OPERATION_KEYRANGE, node));
+                    popup.add(new PopupAction("get key", PopupAction.OPERATION_KEY, node));
                     popup.show(e.getComponent(), e.getX(), e.getY());
-                } else {
+                    break;
+                default:
                     lastSelectedKeysapce = null;
                     lastSelectedColumnFamily = null;
+                    break;
                 }
             }
         }
@@ -154,21 +238,30 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
     private static final int TREE_KEYSPACE = 2;
     private static final int TREE_COLUMN_FAMILY = 3;
 
+    private Client client;
+
     private PropertiesCallback propertiesCallback;
     private SelectedColumnFamilyCallback cCallback;
     private RepaintCallback rCallback;
 
-    private Map<String, String> keyspaceMap = new HashMap<String, String>();
     private JScrollPane scrollPane;
     private String lastSelectedKeysapce;
     private String lastSelectedColumnFamily;
+    private String deletedKeyspace;
     private JTree tree;
+    private DefaultTreeModel treeModel;
 
     public KeyspaceTreePanel(Client client) {
+        this.client = client;
+        createTree();
+    }
+
+    public void createTree() {
         try {
             DefaultMutableTreeNode clusterNode =
                 new DefaultMutableTreeNode(client.describeClusterName());
-            tree = new JTree(clusterNode);
+            treeModel = new DefaultTreeModel(clusterNode);
+            tree = new JTree(treeModel);
             tree.setRootVisible(true);
             tree.addMouseListener(new MousePopup());
             tree.addTreeSelectionListener(this);
@@ -188,7 +281,6 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                     Set<String> cfs = client.getColumnFamilys(keyspace.getName());
                     for (String columnFamily : cfs) {
                         keyspaceNode.add(new DefaultMutableTreeNode(columnFamily));
-                        keyspaceMap.put(columnFamily, keyspace.getName());
                     }
                 } catch (NotFoundException e) {
                     JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
@@ -221,7 +313,9 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
             break;
         case TREE_KEYSPACE:
             keyspace = e.getPath().getPath()[TREE_KEYSPACE - 1].toString();
-            propertiesCallback.keyspaceCallback(keyspace);
+            if (!keyspace.equals(deletedKeyspace)) {
+                propertiesCallback.keyspaceCallback(keyspace);
+            }
             break;
         case TREE_COLUMN_FAMILY:
             keyspace = e.getPath().getPath()[TREE_KEYSPACE - 1].toString();

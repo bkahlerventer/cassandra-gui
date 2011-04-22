@@ -5,7 +5,9 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -30,17 +32,50 @@ public class KeyspaceDialog extends JDialog {
     private JTextField keyspaceText = new JTextField();
     private JTextField replicationFactorText = new JTextField();
     private JComboBox strategyBox = new JComboBox();
+    private JTextField optionText = new JTextField();
 
     private boolean cancel = true;
     private String keyspaceName;
     private int replicationFactor;
     private String strategy;
-    private Map<String, String> strategyOptions;
+    private Map<String, String> strategyOptions = new HashMap<String, String>();
+
+    public KeyspaceDialog(String keyspaceName,
+                          int replicationFactor,
+                          String strategy,
+                          Map<String, String> strategyOptions) {
+        keyspaceText.setText(keyspaceName);
+        keyspaceText.setEditable(false);
+
+        replicationFactorText.setText(String.valueOf(replicationFactor));
+
+        String selectedStrategy = null;
+        for (Entry<String, String> entry : Client.getStrategyMap().entrySet()) {
+            if (entry.getValue().equals(strategy)) {
+                selectedStrategy = entry.getKey();
+                break;
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (Entry<String, String> entry : strategyOptions.entrySet()) {
+            sb.append(entry.getKey()).append("=").append(entry.getValue()).append(",");
+        }
+        if (sb.length() > 0) {
+            optionText.setText(sb.substring(0, sb.length() - 1));
+        }
+
+        create(selectedStrategy);
+    }
 
     public KeyspaceDialog() {
+        create(null);
+    }
+
+    public void create(String selectedStrategy) {
         keyspaceText.addActionListener(new EnterAction());
 
-        JPanel inputPanel = new JPanel(new GridLayout(3, 2));
+        JPanel inputPanel = new JPanel(new GridLayout(4, 2));
         inputPanel.add(new JLabel("Keyspace Name: "));
         inputPanel.add(keyspaceText);
         inputPanel.add(new JLabel("Replication Factor: "));
@@ -49,8 +84,15 @@ public class KeyspaceDialog extends JDialog {
         for (String s : Client.getStrategyMap().keySet()) {
             strategyBox.addItem(s);
         }
+        if (selectedStrategy != null) {
+            strategyBox.setSelectedItem(selectedStrategy);
+        }
+
         inputPanel.add(new JLabel("Strategy: "));
         inputPanel.add(strategyBox);
+
+        inputPanel.add(new JLabel("Strategy Options: <att1>=<value1>,<att2>=<value2>..."));
+        inputPanel.add(optionText);
 
         JButton ok = new JButton("OK");
         ok.addActionListener(new ActionListener() {
@@ -106,6 +148,20 @@ public class KeyspaceDialog extends JDialog {
         }
 
         strategy = (String) strategyBox.getSelectedItem();
+
+        String options = optionText.getText();
+        if (options != null && !options.isEmpty()) {
+            String[] split1 = options.split(",");
+            for (String s : split1) {
+                String[] split2 = s.split("=");
+                if (split2.length != 2) {
+                    JOptionPane.showMessageDialog(null, "Strategy Options format error.");
+                    optionText.requestFocus();
+                    return;
+                }
+                strategyOptions.put(split2[0], split2[1]);
+            }
+        }
 
         setVisible(false);
         cancel = false;
