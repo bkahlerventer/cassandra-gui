@@ -14,9 +14,10 @@ import org.apache.cassandra.node.Tpstats;
 import org.apache.cassandra.thrift.*;
 import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.unit.Cell;
+import org.apache.cassandra.unit.ColumnFamily;
+import org.apache.cassandra.unit.ColumnFamilyMetaData;
 import org.apache.cassandra.unit.Key;
 import org.apache.cassandra.unit.SColumn;
-import org.apache.thrift.TBaseHelper;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
@@ -33,6 +34,40 @@ public class Client {
     public static final String DEFAULT_THRIFT_HOST = "localhost";
     public static final int DEFAULT_THRIFT_PORT = 9160;
     public static final int DEFAULT_JMX_PORT = 8080;
+
+    public enum ColumnType {
+        SUPER("Super"),
+        STANDARD("Standard");
+
+        private String type;
+
+        private ColumnType(String type) {
+            this.type = type;
+        }
+
+        public String toString() {
+            return type;
+        }
+    }
+
+    public enum ComparatorType {
+        ASCII("AsciiType"),
+        BYTES("BytesType"),
+        LEXICAL_UUID("LexicalUUIDType"),
+        LONG("LongType"),
+        TIME_UUID("TimeUUIDType"),
+        UTF8("UTF8Type");
+
+        private String type;
+
+        private ComparatorType(String type) {
+            this.type = type;
+        }
+
+        public String toString() {
+            return type;
+        }
+    }
 
     private TTransport transport;
     private TProtocol protocol;
@@ -200,103 +235,114 @@ public class Client {
     }
 
     public void addColumnFamily(String keyspaceName,
-                                String columnFamilyName,
-                                ColumnFamilyInfo cfi) throws InvalidRequestException, TException {
-        CfDef cfDef = new CfDef(keyspaceName, columnFamilyName);
-        cfDef.setColumn_type(cfi.getColumnType());
+                                ColumnFamily cf) throws InvalidRequestException, TException {
+        CfDef cfDef = new CfDef(keyspaceName, cf.getColumnFamilyName());
+        cfDef.setColumn_type(cf.getColumnType());
 
-        if (!isEmpty(cfi.getComparatorType())) {
-            cfDef.setComparator_type(cfi.getComparatorType());
+        if (!isEmpty(cf.getComparatorType())) {
+            cfDef.setComparator_type(cf.getComparatorType());
         }
 
-        if (!isEmpty(cfi.getSubcomparator())) {
-            cfDef.setSubcomparator_type(cfi.getSubcomparator());
+        if (!isEmpty(cf.getSubcomparator())) {
+            cfDef.setSubcomparator_type(cf.getSubcomparator());
         }
 
-        if (!isEmpty(cfi.getComment())) {
-            cfDef.setComment(cfi.getComment());
+        if (!isEmpty(cf.getComment())) {
+            cfDef.setComment(cf.getComment());
         }
 
-        if (!isEmpty(cfi.getRowsCached())) {
-            cfDef.setRow_cache_size(Double.valueOf(cfi.getRowsCached()));
+        if (!isEmpty(cf.getRowsCached())) {
+            cfDef.setRow_cache_size(Double.valueOf(cf.getRowsCached()));
         }
 
-        if (!isEmpty(cfi.getRowCacheSavePeriod())) {
-            cfDef.setRow_cache_save_period_in_seconds(Integer.valueOf(cfi.getRowCacheSavePeriod()));
+        if (!isEmpty(cf.getRowCacheSavePeriod())) {
+            cfDef.setRow_cache_save_period_in_seconds(Integer.valueOf(cf.getRowCacheSavePeriod()));
         }
 
-        if (!isEmpty(cfi.getKeysCached())) {
-            cfDef.setKey_cache_size(Double.valueOf(cfi.getKeysCached()));
+        if (!isEmpty(cf.getKeysCached())) {
+            cfDef.setKey_cache_size(Double.valueOf(cf.getKeysCached()));
         }
 
-        if (!isEmpty(cfi.getKeyCacheSavePeriod())) {
-            cfDef.setKey_cache_save_period_in_seconds(Integer.valueOf(cfi.getKeyCacheSavePeriod()));
+        if (!isEmpty(cf.getKeyCacheSavePeriod())) {
+            cfDef.setKey_cache_save_period_in_seconds(Integer.valueOf(cf.getKeyCacheSavePeriod()));
         }
 
-        if (!isEmpty(cfi.getReadRepairChance())) {
-            cfDef.setRead_repair_chance(Double.valueOf(cfi.getReadRepairChance()));
+        if (!isEmpty(cf.getReadRepairChance())) {
+            cfDef.setRead_repair_chance(Double.valueOf(cf.getReadRepairChance()));
         }
 
-        if (!isEmpty(cfi.getGcGrace())) {
-            cfDef.setGc_grace_seconds(Integer.valueOf(cfi.getGcGrace()));
+        if (!isEmpty(cf.getGcGrace())) {
+            cfDef.setGc_grace_seconds(Integer.valueOf(cf.getGcGrace()));
         }
 
-        if (!isEmpty(cfi.getColumnMetadata())) {
-//            List<ColumnDef> l = new ArrayList<ColumnDef>();
-//            String[] split1 = cfi.getColumnMetadata().split(",");
-//            for (String s : split1) {
-//                String[] split2 = s.split(":");
-//                String metaKey = split2[0];
-//                String metaVal = split2[1];
-//
-//                ColumnDef cd = new ColumnDef();
-//                if (metaKey.equals("column_name")) {
-//                    if (cfDef.column_type.equals("Super"))
-//                        cd.setName(subColumnNameAsByteArray(metaVal, cfDef));
-//                    else
-//                        cd.setName(columnNameAsByteArray(metaVal, cfDef));
-//                }
-//                else if (metaKey.equals("validation_class"))
-//                {
-//                    columnDefinition.setValidation_class(metaVal);
-//                }
-//                else if (metaKey.equals("index_type"))
-//                {
-//                    columnDefinition.setIndex_type(getIndexTypeFromString(metaVal));
-//                }
-//                else if (metaKey.equals("index_name"))
-//                {
-//                    columnDefinition.setIndex_name(metaVal);
-//                }
-//            }
-//            cfDef.setColumn_metadata(l);
+        if (!cf.getMetaDatas().isEmpty()) {
+            List<ColumnDef> l = new ArrayList<ColumnDef>();
+            for (ColumnFamilyMetaData metaData : cf.getMetaDatas()) {
+                ColumnDef cd = new ColumnDef();
+                cd.setName(metaData.getColumnName().getBytes());
+
+                if (metaData.getValiDationClass() != null) {
+                    cd.setValidation_class(metaData.getValiDationClass());
+                } else if (metaData.getIndexType() != null) {
+                    cd.setIndex_type(getIndexTypeFromString(metaData.getIndexType()));
+                } else if (metaData.getIndexName() != null) {
+                    cd.setIndex_name(metaData.getIndexName());
+                }
+
+                l.add(cd);
+            }
+            cfDef.setColumn_metadata(l);
         }
 
-        if (!isEmpty(cfi.getMemtableOperations())) {
-            cfDef.setMemtable_operations_in_millions(Double.valueOf(cfi.getMemtableOperations()));
+        if (!isEmpty(cf.getMemtableOperations())) {
+            cfDef.setMemtable_operations_in_millions(Double.valueOf(cf.getMemtableOperations()));
         }
 
-        if (!isEmpty(cfi.getMemtableThroughput())) {
-            cfDef.setMemtable_throughput_in_mb(Integer.valueOf(cfi.getMemtableThroughput()));
+        if (!isEmpty(cf.getMemtableThroughput())) {
+            cfDef.setMemtable_throughput_in_mb(Integer.valueOf(cf.getMemtableThroughput()));
         }
 
-        if (!isEmpty(cfi.getMemtableFlushAfter())) {
-            cfDef.setMemtable_flush_after_mins(Integer.valueOf(cfi.getMemtableFlushAfter()));
+        if (!isEmpty(cf.getMemtableFlushAfter())) {
+            cfDef.setMemtable_flush_after_mins(Integer.valueOf(cf.getMemtableFlushAfter()));
         }
 
-        if (!isEmpty(cfi.getDefaultValidationClass())) {
-            cfDef.setDefault_validation_class(cfi.getDefaultValidationClass());
+        if (!isEmpty(cf.getDefaultValidationClass())) {
+            cfDef.setDefault_validation_class(cf.getDefaultValidationClass());
         }
 
-        if (!isEmpty(cfi.getMinCompactionThreshold())) {
-            cfDef.setMin_compaction_threshold(Integer.valueOf(cfi.getMinCompactionThreshold()));
+        if (!isEmpty(cf.getMinCompactionThreshold())) {
+            cfDef.setMin_compaction_threshold(Integer.valueOf(cf.getMinCompactionThreshold()));
         }
 
-        if (!isEmpty(cfi.getMaxCompactionThreshold())) {
-            cfDef.setMax_compaction_threshold(Integer.valueOf(cfi.getMaxCompactionThreshold()));
+        if (!isEmpty(cf.getMaxCompactionThreshold())) {
+            cfDef.setMax_compaction_threshold(Integer.valueOf(cf.getMaxCompactionThreshold()));
         }
 
         client.system_add_column_family(cfDef);
+    }
+
+    private IndexType getIndexTypeFromString(String indexTypeAsString) {
+        IndexType indexType;
+
+        try {
+            indexType = IndexType.findByValue(new Integer(indexTypeAsString));
+        } catch (NumberFormatException e) {
+            try {
+                indexType = IndexType.valueOf(indexTypeAsString);
+            } catch (IllegalArgumentException ie) {
+                throw new RuntimeException("IndexType '" + indexTypeAsString + "' is unsupported.");
+            }
+        }
+
+        if (indexType == null) {
+            throw new RuntimeException("IndexType '" + indexTypeAsString + "' is unsupported.");
+        }
+
+        return indexType;
+    }
+
+    public void dropColumnFamily(String columnFamilyName) throws InvalidRequestException, TException {
+        client.system_drop_column_family(columnFamilyName);
     }
 
     /**
