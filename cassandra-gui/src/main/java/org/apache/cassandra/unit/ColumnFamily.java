@@ -1,16 +1,10 @@
-package org.apache.cassandra.client;
+package org.apache.cassandra.unit;
 
-public class ColumnFamilyInfo {
-    public static final String COLUMN_TYPE_SUPER = "Super";
-    public static final String COLUMN_TYPE_STANDARD = "Standard";
+import java.util.ArrayList;
+import java.util.List;
 
-    public static final String COMPARATOR_ASCII_TYPE = "AsciiType";
-    public static final String COMPARATOR_BYTES_TYPE = "BytesType";
-    public static final String COMPARATOR_LEXICAL_UUID_TYPE = "LexicalUUIDType";
-    public static final String COMPARATOR_LONG_TYPE = "LongType";
-    public static final String COMPARATOR_TIME_UUID_TYPE = "TimeUUIDType";
-    public static final String COMPARATOR_UTF8_TYPE = "UTF8Type";
-
+public class ColumnFamily {
+    private String columnFamilyName;
     private String columnType;
     private String comparatorType;
     private String subcomparator;
@@ -21,13 +15,27 @@ public class ColumnFamilyInfo {
     private String keyCacheSavePeriod;
     private String readRepairChance;
     private String gcGrace;
-    private String columnMetadata;
     private String memtableOperations;
     private String memtableThroughput;
     private String memtableFlushAfter;
     private String defaultValidationClass;
     private String minCompactionThreshold;
     private String maxCompactionThreshold;
+    private List<ColumnFamilyMetaData> metaDatas = new ArrayList<ColumnFamilyMetaData>();
+
+    /**
+     * @return the columnFamilyName
+     */
+    public String getColumnFamilyName() {
+        return columnFamilyName;
+    }
+
+    /**
+     * @param columnFamilyName the columnFamilyName to set
+     */
+    public void setColumnFamilyName(String columnFamilyName) {
+        this.columnFamilyName = columnFamilyName;
+    }
 
     /**
      * @return the columnType
@@ -170,20 +178,6 @@ public class ColumnFamilyInfo {
     }
 
     /**
-     * @return the columnMetadata
-     */
-    public String getColumnMetadata() {
-        return columnMetadata;
-    }
-
-    /**
-     * @param columnMetadata the columnMetadata to set
-     */
-    public void setColumnMetadata(String columnMetadata) {
-        this.columnMetadata = columnMetadata;
-    }
-
-    /**
      * @return the memtableOperations
      */
     public String getMemtableOperations() {
@@ -265,5 +259,19 @@ public class ColumnFamilyInfo {
      */
     public void setMaxCompactionThreshold(String maxCompactionThreshold) {
         this.maxCompactionThreshold = maxCompactionThreshold;
+    }
+
+    /**
+     * @return the metaDatas
+     */
+    public List<ColumnFamilyMetaData> getMetaDatas() {
+        return metaDatas;
+    }
+
+    /**
+     * @param metaDatas the metaDatas to set
+     */
+    public void setMetaDatas(List<ColumnFamilyMetaData> metaDatas) {
+        this.metaDatas = metaDatas;
     }
 }

@@ -24,6 +24,7 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
 import org.apache.cassandra.client.Client;
+import org.apache.cassandra.gui.component.dialog.ColumnFamilyDialog;
 import org.apache.cassandra.gui.component.dialog.KeyDialog;
 import org.apache.cassandra.gui.component.dialog.KeyRangeDialog;
 import org.apache.cassandra.gui.component.dialog.KeyspaceDialog;
@@ -50,6 +51,8 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
         public static final int OPERATION_CREATE_KEYSPACE = 4;
         public static final int OPERATION_REMOVE_KEYSPACE = 5;
         public static final int OPERATION_UPDATE_KEYSPACE = 6;
+        public static final int OPERAITON_CREATE_COLUMN_FAMILY = 7;
+        public static final int OPERATION_REMOVE_COLUMN_FAMILY = 8;
 
         public static final int ROWS_1000 = 1000;
 
@@ -64,7 +67,9 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
 
         @Override
         public void actionPerformed(ActionEvent e) {
+            int status = 0;
             KeyspaceDialog ksd = null;
+            ColumnFamilyDialog cfd = null;
             switch (operation) {
             case OPERATION_CREATE_KEYSPACE:
                 ksd = new KeyspaceDialog();
@@ -123,11 +128,11 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                 if (lastSelectedKeysapce == null) {
                         return;
                 }
-                int status = JOptionPane.showConfirmDialog(null,
-                                                           "Delete a keyspace " + lastSelectedKeysapce + "?",
-                                                           "confirm",
-                                                           JOptionPane.YES_NO_OPTION,
-                                                           JOptionPane.QUESTION_MESSAGE);
+                status = JOptionPane.showConfirmDialog(null,
+                                                       "Delete a keyspace " + lastSelectedKeysapce + "?",
+                                                       "confirm",
+                                                       JOptionPane.YES_NO_OPTION,
+                                                       JOptionPane.QUESTION_MESSAGE);
                 if (status == JOptionPane.YES_OPTION) {
                     try {
                         client.dropKeyspace(lastSelectedKeysapce);
@@ -142,6 +147,41 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                     }
                 }
 
+                break;
+            case OPERAITON_CREATE_COLUMN_FAMILY:
+                cfd = new ColumnFamilyDialog();
+                cfd.setVisible(true);
+                if (cfd.isCancel()) {
+                    return;
+                }
+
+//                try {
+//                    client.addKeyspace(ksd.getKeyspaceName(),
+//                                       ksd.getStrategy(),
+//                                       ksd.getStrategyOptions(),
+//                                       ksd.getReplicationFactor());
+//                } catch (Exception ex) {
+//                    JOptionPane.showMessageDialog(null, "error: " + ex.toString());
+//                    ex.printStackTrace();
+//                    return;
+//                }
+
+                node.add(new DefaultMutableTreeNode(cfd.getInfo().getColumnFamilyName()));
+                treeModel.reload(node);
+                break;
+            case OPERATION_REMOVE_COLUMN_FAMILY:
+                if (lastSelectedKeysapce == null ||
+                    lastSelectedColumnFamily == null) {
+                    return;
+                }
+
+                status = JOptionPane.showConfirmDialog(null,
+                                                       "Delete a keyspace " + lastSelectedColumnFamily + "?",
+                                                       "confirm",
+                                                       JOptionPane.YES_NO_OPTION,
+                                                       JOptionPane.QUESTION_MESSAGE);
+                if (status == JOptionPane.YES_OPTION) {
+                }
                 break;
             case OPERATION_ROWS:
             case OPERATION_KEYRANGE:
@@ -212,6 +252,7 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                     lastSelectedKeysapce = (String) node.getUserObject();
                     popup.add(new PopupAction("properties", PopupAction.OPERATION_UPDATE_KEYSPACE, node));
                     popup.add(new PopupAction("remove", PopupAction.OPERATION_REMOVE_KEYSPACE, node));
+                    popup.add(new PopupAction("create column family", PopupAction.OPERAITON_CREATE_COLUMN_FAMILY, node));
                     popup.show(e.getComponent(), e.getX(), e.getY());
                     break;
                 case TREE_COLUMN_FAMILY:
@@ -220,6 +261,7 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                     lastSelectedKeysapce = (String) parent.getUserObject();
                     lastSelectedColumnFamily = columnFamily;
 
+                    popup.add(new PopupAction("remove column family", PopupAction.OPERATION_REMOVE_COLUMN_FAMILY, node));
                     popup.add(new PopupAction("show 1000 rows", PopupAction.OPERATION_ROWS, node));
                     popup.add(new PopupAction("key range rows", PopupAction.OPERATION_KEYRANGE, node));
                     popup.add(new PopupAction("get key", PopupAction.OPERATION_KEY, node));

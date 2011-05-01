@@ -3,9 +3,7 @@ package org.apache.cassandra.node;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 
 public class RingNode implements Serializable {
