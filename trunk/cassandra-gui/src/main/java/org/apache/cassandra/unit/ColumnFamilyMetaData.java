@@ -1,9 +1,11 @@
 package org.apache.cassandra.unit;
 
+import org.apache.cassandra.thrift.IndexType;
+
 public class ColumnFamilyMetaData {
     private String columnName;
     private String valiDationClass;
-    private String indexType;
+    private IndexType indexType;
     private String indexName;
 
     /**
@@ -37,14 +39,14 @@ public class ColumnFamilyMetaData {
     /**
      * @return the indexType
      */
-    public String getIndexType() {
+    public IndexType getIndexType() {
         return indexType;
     }
 
     /**
      * @param indexType the indexType to set
      */
-    public void setIndexType(String indexType) {
+    public void setIndexType(IndexType indexType) {
         this.indexType = indexType;
     }
 

@@ -74,6 +74,8 @@ public class KeyspaceDialog extends JDialog {
 
     public void create(String selectedStrategy) {
         keyspaceText.addActionListener(new EnterAction());
+        replicationFactorText.addActionListener(new EnterAction());
+        optionText.addActionListener(new EnterAction());
 
         JPanel inputPanel = new JPanel(new GridLayout(4, 2));
         inputPanel.add(new JLabel("Keyspace Name: "));

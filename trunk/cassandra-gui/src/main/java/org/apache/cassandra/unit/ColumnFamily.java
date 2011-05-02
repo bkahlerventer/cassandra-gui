@@ -6,7 +6,7 @@ import java.util.List;
 public class ColumnFamily {
     private String columnFamilyName;
     private String columnType;
-    private String comparatorType;
+    private String comparator;
     private String subcomparator;
     private String comment;
     private String rowsCached;
@@ -22,6 +22,9 @@ public class ColumnFamily {
     private String minCompactionThreshold;
     private String maxCompactionThreshold;
     private List<ColumnFamilyMetaData> metaDatas = new ArrayList<ColumnFamilyMetaData>();
+
+    public ColumnFamily() {
+    }
 
     /**
      * @return the columnFamilyName
@@ -52,17 +55,17 @@ public class ColumnFamily {
     }
 
     /**
-     * @return the comparatorType
+     * @return the comparator
      */
-    public String getComparatorType() {
-        return comparatorType;
+    public String getComparator() {
+        return comparator;
     }
 
     /**
-     * @param comparatorType the comparatorType to set
+     * @param comparator the comparator to set
      */
-    public void setComparatorType(String comparatorType) {
-        this.comparatorType = comparatorType;
+    public void setComparator(String comparator) {
+        this.comparator = comparator;
     }
 
     /**
