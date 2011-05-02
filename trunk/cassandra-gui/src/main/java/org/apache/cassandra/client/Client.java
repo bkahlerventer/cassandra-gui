@@ -50,44 +50,6 @@ public class Client {
         }
     }
 
-    public enum ComparatorType {
-        ASCII("AsciiType"),
-        BYTES("BytesType"),
-        LEXICAL_UUID("LexicalUUIDType"),
-        LONG("LongType"),
-        TIME_UUID("TimeUUIDType"),
-        UTF8("UTF8Type");
-
-        private String type;
-
-        private ComparatorType(String type) {
-            this.type = type;
-        }
-
-        public String toString() {
-            return type;
-        }
-    }
-
-    public enum ValidationClass {
-        ASCII("AsciiType"),
-        BYTES("BytesType"),
-        INTEGER("IntegerType"),
-        LONG("LongType"),
-        TIME_UUID("TimeUUIDType"),
-        UTF8("UTF8Type");
-
-        private String type;
-
-        private ValidationClass(String type) {
-            this.type = type;
-        }
-
-        public String toString() {
-            return type;
-        }
-    }
-
     private TTransport transport;
     private TProtocol protocol;
     private Cassandra.Client client;
@@ -350,6 +312,7 @@ public class Client {
                                    ColumnFamily cf) throws InvalidRequestException, TException {
         this.keyspace = keyspaceName;
         CfDef cfDef = new CfDef(keyspaceName, cf.getColumnFamilyName());
+        cfDef.setId(cf.getId());
         cfDef.setColumn_type(cf.getColumnType());
 
         if (!isEmpty(cf.getComparator())) {
@@ -499,6 +462,7 @@ public class Client {
             CfDef cd = cfIterator.next();
             if (columnFamily.equalsIgnoreCase(cd.getName())) {
                 ColumnFamily cf = new ColumnFamily();
+                cf.setId(cd.getId());
                 cf.setColumnFamilyName(cd.getName());
                 cf.setColumnType(cd.getColumn_type());
                 cf.setComparator(cd.getComparator_type());
@@ -816,5 +780,29 @@ public class Client {
         strategyMap.put("NetworkTopologyStrategy", "org.apache.cassandra.locator.NetworkTopologyStrategy");
         strategyMap.put("OldNetworkTopologyStrategy", "org.apache.cassandra.locator.OldNetworkTopologyStrategy");
         return strategyMap;
+    }
+
+    public static Map<String, String> getComparatorTypeMap() {
+        Map<String, String> comparatorMap = new TreeMap<String, String>();
+        comparatorMap.put("org.apache.cassandra.db.marshal.AsciiType", "AsciiType");
+        comparatorMap.put("org.apache.cassandra.db.marshal.BytesType", "BytesType");
+        comparatorMap.put("org.apache.cassandra.db.marshal.LexicalUUIDType", "LexicalUUIDType");
+        comparatorMap.put("org.apache.cassandra.db.marshal.LongType", "LongType");
+        comparatorMap.put("org.apache.cassandra.db.marshal.TimeUUIDType", "TimeUUIDType");
+        comparatorMap.put("org.apache.cassandra.db.marshal.UTF8Type", "UTF8Type");
+
+        return comparatorMap;
+    }
+
+    public static Map<String, String> getValidationClassMap() {
+        Map<String, String> validationClassMap = new TreeMap<String, String>();
+        validationClassMap.put("org.apache.cassandra.db.marshal.AsciiType", "AsciiType");
+        validationClassMap.put("org.apache.cassandra.db.marshal.BytesType", "BytesType");
+        validationClassMap.put("org.apache.cassandra.db.marshal.IntegerType", "IntegerType");
+        validationClassMap.put("org.apache.cassandra.db.marshal.LongType", "LongType");
+        validationClassMap.put("org.apache.cassandra.db.marshal.TimeUUIDType", "TimeUUIDType");
+        validationClassMap.put("org.apache.cassandra.db.marshal.UTF8Type", "UTF8Type");
+
+        return validationClassMap;
     }
 }

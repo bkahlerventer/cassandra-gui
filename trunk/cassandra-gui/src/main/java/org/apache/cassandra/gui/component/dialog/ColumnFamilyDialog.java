@@ -16,7 +16,6 @@ import javax.swing.JTextField;
 
 import org.apache.cassandra.client.Client;
 import org.apache.cassandra.client.Client.ColumnType;
-import org.apache.cassandra.client.Client.ComparatorType;
 import org.apache.cassandra.unit.ColumnFamily;
 
 public class ColumnFamilyDialog extends JDialog {
@@ -32,7 +31,8 @@ public class ColumnFamilyDialog extends JDialog {
     private class ComparatorAction implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            if (((String) columnTypeBox.getSelectedItem()).equals(Client.ColumnType.SUPER.toString())) {
+            if (((String) columnTypeBox.getSelectedItem()).equals(Client.ColumnType.SUPER.toString()) &&
+                !update) {
                 subComparatorTypeBox.setEnabled(true);
             } else {
                 subComparatorTypeBox.setEnabled(false);
@@ -60,11 +60,33 @@ public class ColumnFamilyDialog extends JDialog {
     private ColumnFamilyMetaDataDialog metaDataDialog;
 
     private boolean cancel = true;
-    private ColumnFamily columnFamily = new ColumnFamily();
+    private boolean update = false;
+    private ColumnFamily cf = new ColumnFamily();
 
-    public ColumnFamilyDialog(ColumnFamily columnFamily) {
-        this.columnFamily = columnFamily;
-        create(columnFamily);
+    public ColumnFamilyDialog(ColumnFamily cf) {
+        this.cf = cf;
+        update = true;
+        columnFamilyText.setText(cf.getColumnFamilyName());
+        columnFamilyText.setEnabled(false);
+
+        comparatorTypeBox.setEnabled(false);
+        subComparatorTypeBox.setEnabled(false);
+
+        commentText.setText(cf.getComment());
+        rowsCachedText.setText(cf.getRowsCached());
+        rowCacheSavePeriodText.setText(cf.getRowCacheSavePeriod());
+        keysCachedText.setText(cf.getKeysCached());
+        keyCacheSavePeriodText.setText(cf.getKeyCacheSavePeriod());
+        readRepairChanceText.setText(cf.getReadRepairChance());
+        gcGraceText.setText(cf.getGcGrace());
+        memtableOperationsText.setText(cf.getMemtableOperations());
+        memtableThroughputText.setText(cf.getMemtableThroughput());
+        memtableFlushAfterText.setText(cf.getMemtableFlushAfter());
+        defaultValidationClassText.setText(cf.getDefaultValidationClass());
+        minCompactionThresholdText.setText(cf.getMinCompactionThreshold());
+        maxCompactionThresholdText.setText(cf.getMaxCompactionThreshold());
+
+        create(cf);
     }
 
     public ColumnFamilyDialog() {
@@ -106,21 +128,22 @@ public class ColumnFamilyDialog extends JDialog {
         inputPanel.add(columnTypeBox);
 
         // Comparator
-        for (ComparatorType ct : Client.ComparatorType.values()) {
-            comparatorTypeBox.addItem(ct.toString());
+        for (String ct : Client.getComparatorTypeMap().values()) {
+            comparatorTypeBox.addItem(ct);
         }
         if (selectedColumnFamily != null) {
-            comparatorTypeBox.setSelectedItem(selectedColumnFamily.getComparator());
+            comparatorTypeBox.setSelectedItem(Client.getComparatorTypeMap().get(selectedColumnFamily.getComparator()));
         }
         inputPanel.add(new JLabel("Comparator Type: "));
         inputPanel.add(comparatorTypeBox);
 
         // SubComparator
-        for (ComparatorType ct : Client.ComparatorType.values()) {
-            subComparatorTypeBox.addItem(ct.toString());
+        for (String ct : Client.getComparatorTypeMap().values()) {
+            subComparatorTypeBox.addItem(ct);
         }
-        if (selectedColumnFamily != null) {
-            subComparatorTypeBox.setSelectedItem(selectedColumnFamily.getSubcomparator());
+        if (selectedColumnFamily != null &&
+            selectedColumnFamily.getSubcomparator() != null) {
+            subComparatorTypeBox.setSelectedItem(Client.getComparatorTypeMap().get(selectedColumnFamily.getSubcomparator()));
         } else {
             subComparatorTypeBox.setSelectedItem("");
         }
@@ -167,7 +190,7 @@ public class ColumnFamilyDialog extends JDialog {
         addJTextField(inputPanel, "Max Compaction Threshold: ", maxCompactionThresholdText);
 
         // column metadata
-        metaDataDialog = new ColumnFamilyMetaDataDialog(columnFamily);
+        metaDataDialog = new ColumnFamilyMetaDataDialog(cf);
         inputPanel.add(new JLabel("Column MetaData: "));
         JButton detail = new JButton("detail");
         detail.addActionListener(new ActionListener() {
@@ -223,21 +246,21 @@ public class ColumnFamilyDialog extends JDialog {
             columnFamilyText.requestFocus();
             return;
         }
-        columnFamily.setColumnFamilyName(columnFamilyText.getText());
+        cf.setColumnFamilyName(columnFamilyText.getText());
 
         // Column Type
-        columnFamily.setColumnType((String) columnTypeBox.getSelectedItem());
+        cf.setColumnType((String) columnTypeBox.getSelectedItem());
 
         // Comparator
-        columnFamily.setComparator((String) comparatorTypeBox.getSelectedItem());
+        cf.setComparator((String) comparatorTypeBox.getSelectedItem());
 
         // SubComparator Type
         if (((String) columnTypeBox.getSelectedItem()).equals(Client.ColumnType.SUPER.toString())) {
-            columnFamily.setSubcomparator((String) subComparatorTypeBox.getSelectedItem());
+            cf.setSubcomparator((String) subComparatorTypeBox.getSelectedItem());
         }
 
         // comment
-        columnFamily.setComment(commentText.getText());
+        cf.setComment(commentText.getText());
 
         // Rows Cached
         if (!rowsCachedText.getText().isEmpty()) {
@@ -248,7 +271,7 @@ public class ColumnFamilyDialog extends JDialog {
                 rowsCachedText.requestFocus();
                 return;
             }
-            columnFamily.setRowsCached(rowsCachedText.getText());
+            cf.setRowsCached(rowsCachedText.getText());
         }
 
         // Row Cached Save Period
@@ -260,7 +283,7 @@ public class ColumnFamilyDialog extends JDialog {
                 rowCacheSavePeriodText.requestFocus();
                 return;
             }
-            columnFamily.setRowsCached(rowCacheSavePeriodText.getText());
+            cf.setRowsCached(rowCacheSavePeriodText.getText());
         }
 
         // Keys Cached
@@ -272,7 +295,7 @@ public class ColumnFamilyDialog extends JDialog {
                 keysCachedText.requestFocus();
                 return;
             }
-            columnFamily.setKeysCached(keysCachedText.getText());
+            cf.setKeysCached(keysCachedText.getText());
         }
 
         // Key Cached Save Period
@@ -284,7 +307,7 @@ public class ColumnFamilyDialog extends JDialog {
                 keyCacheSavePeriodText.requestFocus();
                 return;
             }
-            columnFamily.setKeyCacheSavePeriod(keyCacheSavePeriodText.getText());
+            cf.setKeyCacheSavePeriod(keyCacheSavePeriodText.getText());
         }
 
         // Read Repair Chance
@@ -296,7 +319,7 @@ public class ColumnFamilyDialog extends JDialog {
                 readRepairChanceText.requestFocus();
                 return;
             }
-            columnFamily.setReadRepairChance(readRepairChanceText.getText());
+            cf.setReadRepairChance(readRepairChanceText.getText());
         }
 
         // GC Grace
@@ -308,7 +331,7 @@ public class ColumnFamilyDialog extends JDialog {
                 gcGraceText.requestFocus();
                 return;
             }
-            columnFamily.setGcGrace(gcGraceText.getText());
+            cf.setGcGrace(gcGraceText.getText());
         }
 
         // Memtable Operations
@@ -320,7 +343,7 @@ public class ColumnFamilyDialog extends JDialog {
                 memtableOperationsText.requestFocus();
                 return;
             }
-            columnFamily.setMemtableOperations(memtableOperationsText.getText());
+            cf.setMemtableOperations(memtableOperationsText.getText());
         }
 
         // MemTable Throughput
@@ -332,7 +355,7 @@ public class ColumnFamilyDialog extends JDialog {
                 memtableThroughputText.requestFocus();
                 return;
             }
-            columnFamily.setMemtableThroughput(memtableThroughputText.getText());
+            cf.setMemtableThroughput(memtableThroughputText.getText());
         }
 
         // MemTable Flush After
@@ -344,11 +367,11 @@ public class ColumnFamilyDialog extends JDialog {
                 memtableFlushAfterText.requestFocus();
                 return;
             }
-            columnFamily.setMemtableFlushAfter(memtableFlushAfterText.getText());
+            cf.setMemtableFlushAfter(memtableFlushAfterText.getText());
         }
 
         // Default Validation Class
-        columnFamily.setDefaultValidationClass(defaultValidationClassText.getText());
+        cf.setDefaultValidationClass(defaultValidationClassText.getText());
 
         // Min Compaction Threshold
         if (!minCompactionThresholdText.getText().isEmpty()) {
@@ -359,7 +382,7 @@ public class ColumnFamilyDialog extends JDialog {
                 minCompactionThresholdText.requestFocus();
                 return;
             }
-            columnFamily.setMinCompactionThreshold(minCompactionThresholdText.getText());
+            cf.setMinCompactionThreshold(minCompactionThresholdText.getText());
         }
 
         // Max Compaction Threshold
@@ -371,7 +394,7 @@ public class ColumnFamilyDialog extends JDialog {
                 maxCompactionThresholdText.requestFocus();
                 return;
             }
-            columnFamily.setMaxCompactionThreshold(maxCompactionThresholdText.getText());
+            cf.setMaxCompactionThreshold(maxCompactionThresholdText.getText());
         }
 
         setVisible(false);
@@ -389,6 +412,6 @@ public class ColumnFamilyDialog extends JDialog {
      * @return the info
      */
     public ColumnFamily getColumnFamily() {
-        return columnFamily;
+        return cf;
     }
 }

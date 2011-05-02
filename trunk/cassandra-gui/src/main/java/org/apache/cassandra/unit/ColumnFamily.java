@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ColumnFamily {
+    private int id;
     private String columnFamilyName;
     private String columnType;
     private String comparator;
@@ -24,6 +25,20 @@ public class ColumnFamily {
     private List<ColumnFamilyMetaData> metaDatas = new ArrayList<ColumnFamilyMetaData>();
 
     public ColumnFamily() {
+    }
+
+    /**
+     * @return the id
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(int id) {
+        this.id = id;
     }
 
     /**
