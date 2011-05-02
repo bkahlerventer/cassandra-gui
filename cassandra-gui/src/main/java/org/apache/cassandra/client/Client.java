@@ -346,6 +346,99 @@ public class Client {
         client.system_add_column_family(cfDef);
     }
 
+    public void updateColumnFamily(String keyspaceName,
+                                   ColumnFamily cf) throws InvalidRequestException, TException {
+        this.keyspace = keyspaceName;
+        CfDef cfDef = new CfDef(keyspaceName, cf.getColumnFamilyName());
+        cfDef.setColumn_type(cf.getColumnType());
+
+        if (!isEmpty(cf.getComparator())) {
+            cfDef.setComparator_type(cf.getComparator());
+        }
+
+        if (cf.getComparator().equals(ColumnType.SUPER)) {
+            if (!isEmpty(cf.getSubcomparator())) {
+                cfDef.setSubcomparator_type(cf.getSubcomparator());
+            }
+        }
+
+        if (!isEmpty(cf.getComment())) {
+            cfDef.setComment(cf.getComment());
+        }
+
+        if (!isEmpty(cf.getRowsCached())) {
+            cfDef.setRow_cache_size(Double.valueOf(cf.getRowsCached()));
+        }
+
+        if (!isEmpty(cf.getRowCacheSavePeriod())) {
+            cfDef.setRow_cache_save_period_in_seconds(Integer.valueOf(cf.getRowCacheSavePeriod()));
+        }
+
+        if (!isEmpty(cf.getKeysCached())) {
+            cfDef.setKey_cache_size(Double.valueOf(cf.getKeysCached()));
+        }
+
+        if (!isEmpty(cf.getKeyCacheSavePeriod())) {
+            cfDef.setKey_cache_save_period_in_seconds(Integer.valueOf(cf.getKeyCacheSavePeriod()));
+        }
+
+        if (!isEmpty(cf.getReadRepairChance())) {
+            cfDef.setRead_repair_chance(Double.valueOf(cf.getReadRepairChance()));
+        }
+
+        if (!isEmpty(cf.getGcGrace())) {
+            cfDef.setGc_grace_seconds(Integer.valueOf(cf.getGcGrace()));
+        }
+
+        if (!cf.getMetaDatas().isEmpty()) {
+            List<ColumnDef> l = new ArrayList<ColumnDef>();
+            for (ColumnFamilyMetaData metaData : cf.getMetaDatas()) {
+                ColumnDef cd = new ColumnDef();
+                cd.setName(metaData.getColumnName().getBytes());
+
+                if (metaData.getValiDationClass() != null) {
+                    cd.setValidation_class(metaData.getValiDationClass());
+                }
+                if (metaData.getIndexType() != null) {
+                    cd.setIndex_type(metaData.getIndexType());
+                }
+                if (metaData.getIndexName() != null) {
+                    cd.setIndex_name(metaData.getIndexName());
+                }
+
+                l.add(cd);
+            }
+            cfDef.setColumn_metadata(l);
+        }
+
+        if (!isEmpty(cf.getMemtableOperations())) {
+            cfDef.setMemtable_operations_in_millions(Double.valueOf(cf.getMemtableOperations()));
+        }
+
+        if (!isEmpty(cf.getMemtableThroughput())) {
+            cfDef.setMemtable_throughput_in_mb(Integer.valueOf(cf.getMemtableThroughput()));
+        }
+
+        if (!isEmpty(cf.getMemtableFlushAfter())) {
+            cfDef.setMemtable_flush_after_mins(Integer.valueOf(cf.getMemtableFlushAfter()));
+        }
+
+        if (!isEmpty(cf.getDefaultValidationClass())) {
+            cfDef.setDefault_validation_class(cf.getDefaultValidationClass());
+        }
+
+        if (!isEmpty(cf.getMinCompactionThreshold())) {
+            cfDef.setMin_compaction_threshold(Integer.valueOf(cf.getMinCompactionThreshold()));
+        }
+
+        if (!isEmpty(cf.getMaxCompactionThreshold())) {
+            cfDef.setMax_compaction_threshold(Integer.valueOf(cf.getMaxCompactionThreshold()));
+        }
+
+        client.set_keyspace(keyspaceName);
+        client.system_update_column_family(cfDef);
+    }
+
     public void dropColumnFamily(String keyspaceName, String columnFamilyName) throws InvalidRequestException, TException {
         this.keyspace = keyspaceName;
         client.set_keyspace(keyspaceName);
