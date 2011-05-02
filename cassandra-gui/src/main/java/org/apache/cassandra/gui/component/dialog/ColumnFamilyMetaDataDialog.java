@@ -57,7 +57,8 @@ public class ColumnFamilyMetaDataDialog extends JDialog {
         column.setResizable(false);
 
         TableColumn colValidationClass = table.getColumnModel().getColumn(1);
-        JComboBox validationClassCb = new JComboBox(Client.ValidationClass.values());
+        JComboBox validationClassCb = new JComboBox(Client.getValidationClassMap().values().toArray());
+
         validationClassCb.setBorder(BorderFactory.createEmptyBorder());
         colValidationClass.setCellEditor(new DefaultCellEditor(validationClassCb));
 
@@ -67,6 +68,7 @@ public class ColumnFamilyMetaDataDialog extends JDialog {
         colIndexType.setCellEditor(new DefaultCellEditor(indexTypeCb));
 
         for (ColumnFamilyMetaData metaData : columnFamily.getMetaDatas()) {
+            metaData.setValiDationClass(Client.getValidationClassMap().get(metaData.getValiDationClass()));
             model.add(metaData);
         }
 
@@ -93,8 +95,7 @@ public class ColumnFamilyMetaDataDialog extends JDialog {
                     }
                     metaData.setColumnName(columnName);
 
-                    Client.ValidationClass vc = (Client.ValidationClass) model.getValueAt(i, ColumnFamilyMetaDataModel.COLUMN_VALIDATION_CLASS);
-                    String valiDationClass = vc.toString();
+                    String valiDationClass = (String) model.getValueAt(i, ColumnFamilyMetaDataModel.COLUMN_VALIDATION_CLASS);
                     if (valiDationClass == null || valiDationClass.isEmpty()) {
                         JOptionPane.showMessageDialog(null, "Enter ValiDation Class.");
                         return;

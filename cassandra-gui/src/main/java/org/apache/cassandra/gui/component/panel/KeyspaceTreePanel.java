@@ -193,6 +193,18 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                 }
 
                 cfd = new ColumnFamilyDialog(cf);
+                cfd.setVisible(true);
+                if (cfd.isCancel()) {
+                    return;
+                }
+
+                try {
+                    client.updateColumnFamily(lastSelectedKeysapce, cfd.getColumnFamily());
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "error: " + ex.toString());
+                    ex.printStackTrace();
+                    return;
+                }
                 break;
             case OPERATION_REMOVE_COLUMN_FAMILY:
                 if (lastSelectedKeysapce == null ||
