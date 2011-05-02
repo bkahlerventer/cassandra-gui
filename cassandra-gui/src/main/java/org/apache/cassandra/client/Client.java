@@ -69,6 +69,25 @@ public class Client {
         }
     }
 
+    public enum ValidationClass {
+        ASCII("AsciiType"),
+        BYTES("BytesType"),
+        INTEGER("IntegerType"),
+        LONG("LongType"),
+        TIME_UUID("TimeUUIDType"),
+        UTF8("UTF8Type");
+
+        private String type;
+
+        private ValidationClass(String type) {
+            this.type = type;
+        }
+
+        public String toString() {
+            return type;
+        }
+    }
+
     private TTransport transport;
     private TProtocol protocol;
     private Cassandra.Client client;
@@ -236,15 +255,18 @@ public class Client {
 
     public void addColumnFamily(String keyspaceName,
                                 ColumnFamily cf) throws InvalidRequestException, TException {
+        this.keyspace = keyspaceName;
         CfDef cfDef = new CfDef(keyspaceName, cf.getColumnFamilyName());
         cfDef.setColumn_type(cf.getColumnType());
 
-        if (!isEmpty(cf.getComparatorType())) {
-            cfDef.setComparator_type(cf.getComparatorType());
+        if (!isEmpty(cf.getComparator())) {
+            cfDef.setComparator_type(cf.getComparator());
         }
 
-        if (!isEmpty(cf.getSubcomparator())) {
-            cfDef.setSubcomparator_type(cf.getSubcomparator());
+        if (cf.getComparator().equals(ColumnType.SUPER)) {
+            if (!isEmpty(cf.getSubcomparator())) {
+                cfDef.setSubcomparator_type(cf.getSubcomparator());
+            }
         }
 
         if (!isEmpty(cf.getComment())) {
@@ -283,9 +305,11 @@ public class Client {
 
                 if (metaData.getValiDationClass() != null) {
                     cd.setValidation_class(metaData.getValiDationClass());
-                } else if (metaData.getIndexType() != null) {
-                    cd.setIndex_type(getIndexTypeFromString(metaData.getIndexType()));
-                } else if (metaData.getIndexName() != null) {
+                }
+                if (metaData.getIndexType() != null) {
+                    cd.setIndex_type(metaData.getIndexType());
+                }
+                if (metaData.getIndexName() != null) {
                     cd.setIndex_name(metaData.getIndexName());
                 }
 
@@ -318,31 +342,22 @@ public class Client {
             cfDef.setMax_compaction_threshold(Integer.valueOf(cf.getMaxCompactionThreshold()));
         }
 
+        client.set_keyspace(keyspaceName);
         client.system_add_column_family(cfDef);
     }
 
-    private IndexType getIndexTypeFromString(String indexTypeAsString) {
-        IndexType indexType;
-
-        try {
-            indexType = IndexType.findByValue(new Integer(indexTypeAsString));
-        } catch (NumberFormatException e) {
-            try {
-                indexType = IndexType.valueOf(indexTypeAsString);
-            } catch (IllegalArgumentException ie) {
-                throw new RuntimeException("IndexType '" + indexTypeAsString + "' is unsupported.");
-            }
-        }
-
-        if (indexType == null) {
-            throw new RuntimeException("IndexType '" + indexTypeAsString + "' is unsupported.");
-        }
-
-        return indexType;
+    public void dropColumnFamily(String keyspaceName, String columnFamilyName) throws InvalidRequestException, TException {
+        this.keyspace = keyspaceName;
+        client.set_keyspace(keyspaceName);
+        client.system_drop_column_family(columnFamilyName);
     }
 
-    public void dropColumnFamily(String columnFamilyName) throws InvalidRequestException, TException {
-        client.system_drop_column_family(columnFamilyName);
+    public void truncateColumnFamily(String keyspaceName, String columnFamilyName)
+            throws InvalidRequestException, TException, UnavailableException {
+        this.keyspace = keyspaceName;
+        this.columnFamily = columnFamilyName;
+        client.set_keyspace(keyspaceName);
+        client.truncate(columnFamilyName);
     }
 
     /**
@@ -376,9 +391,51 @@ public class Client {
                 }
 
                 return columnMetadata;
-
             }
         }
+        System.out.println("returning null");
+        return null;
+    }
+
+    public ColumnFamily getColumnFamilyBean(String keyspace, String columnFamily)
+            throws NotFoundException, TException, InvalidRequestException, UnsupportedEncodingException {
+        this.keyspace = keyspace;
+        this.columnFamily = columnFamily;
+
+        for (Iterator<CfDef> cfIterator = client.describe_keyspace(keyspace).getCf_defsIterator(); cfIterator.hasNext();) {
+            CfDef cd = cfIterator.next();
+            if (columnFamily.equalsIgnoreCase(cd.getName())) {
+                ColumnFamily cf = new ColumnFamily();
+                cf.setColumnFamilyName(cd.getName());
+                cf.setColumnType(cd.getColumn_type());
+                cf.setComparator(cd.getComparator_type());
+                cf.setSubcomparator(cd.getSubcomparator_type());
+                cf.setComment(cd.getComment());
+                cf.setRowsCached(String.valueOf(cd.getRow_cache_size()));
+                cf.setRowCacheSavePeriod(String.valueOf(cd.getRow_cache_save_period_in_seconds()));
+                cf.setKeysCached(String.valueOf(cd.getKey_cache_size()));
+                cf.setKeyCacheSavePeriod(String.valueOf(cd.getKey_cache_save_period_in_seconds()));
+                cf.setReadRepairChance(String.valueOf(cd.getRead_repair_chance()));
+                cf.setGcGrace(String.valueOf(cd.getGc_grace_seconds()));
+                cf.setMemtableOperations(String.valueOf(cd.getMemtable_operations_in_millions()));
+                cf.setMemtableThroughput(String.valueOf(cd.getMemtable_throughput_in_mb()));
+                cf.setMemtableFlushAfter(String.valueOf(cd.getMemtable_flush_after_mins()));
+                cf.setDefaultValidationClass(cd.getDefault_validation_class());
+                cf.setMinCompactionThreshold(String.valueOf(cd.getMin_compaction_threshold()));
+                cf.setMaxCompactionThreshold(String.valueOf(cd.getMax_compaction_threshold()));
+                for (ColumnDef cdef : cd.getColumn_metadata()) {
+                    ColumnFamilyMetaData cfmd = new ColumnFamilyMetaData();
+                    cfmd.setColumnName(new String(cdef.getName(), "UTF8"));
+                    cfmd.setValiDationClass(cdef.getValidation_class());
+                    cfmd.setIndexType(cdef.getIndex_type());
+                    cfmd.setIndexName(cdef.getIndex_name());
+                    cf.getMetaDatas().add(cfmd);
+                }
+
+                return cf;
+            }
+        }
+
         System.out.println("returning null");
         return null;
     }
@@ -438,6 +495,7 @@ public class Client {
         long timestamp = System.currentTimeMillis() * 1000;
         Column col = new Column(ByteBuffer.wrap(key.getBytes()), ByteBuffer.wrap(value.getBytes()), timestamp);
 
+        client.set_keyspace(keyspace);
         client.insert(ByteBuffer.wrap(key.getBytes()), parent, col, ConsistencyLevel.ONE);
 
         return new Date(timestamp / 1000);
@@ -450,6 +508,8 @@ public class Client {
 
         ColumnPath colPath = new ColumnPath(columnFamily);
         long timestamp = System.currentTimeMillis() * 1000;
+
+        client.set_keyspace(keyspace);
         client.remove(ByteBuffer.wrap(key.getBytes()), colPath, timestamp, ConsistencyLevel.ONE);
     }
 
@@ -458,6 +518,8 @@ public class Client {
         ColumnPath colPath = new ColumnPath(columnFamily);
         colPath.setSuper_column(superColumn.getBytes());
         long timestamp = System.currentTimeMillis() * 1000;
+
+        client.set_keyspace(keyspace);
         client.remove(ByteBuffer.wrap(key.getBytes()), colPath, timestamp, ConsistencyLevel.ONE);
     }
 
@@ -469,6 +531,8 @@ public class Client {
         ColumnPath colPath = new ColumnPath(columnFamily);
         colPath.setColumn(column.getBytes());
         long timestamp = System.currentTimeMillis() * 1000;
+
+        client.set_keyspace(keyspace);
         client.remove(ByteBuffer.wrap(key.getBytes()), colPath, timestamp, ConsistencyLevel.ONE);
     }
 
@@ -481,6 +545,8 @@ public class Client {
         colPath.setSuper_column(superColumn.getBytes());
         colPath.setColumn(column.getBytes());
         long timestamp = System.currentTimeMillis() * 1000;
+
+        client.set_keyspace(keyspace);
         client.remove(ByteBuffer.wrap(key.getBytes()), colPath, timestamp, ConsistencyLevel.ONE);
     }
 
@@ -503,8 +569,12 @@ public class Client {
         SlicePredicate slicePredicate = new SlicePredicate();
         slicePredicate.setSlice_range(sliceRange);
 
-        List<ColumnOrSuperColumn> l =
-            client.get_slice(ByteBuffer.wrap(key.getBytes()), columnParent, slicePredicate, ConsistencyLevel.ONE);
+        List<ColumnOrSuperColumn> l = null;
+        try {
+            l = client.get_slice(ByteBuffer.wrap(key.getBytes()), columnParent, slicePredicate, ConsistencyLevel.ONE);
+        } catch (Exception e) {
+            return m;
+        }
 
         Key k = new Key(key, new TreeMap<String, SColumn>(), new TreeMap<String, Cell>());
         for (ColumnOrSuperColumn column : l) {
@@ -556,8 +626,14 @@ public class Client {
         SlicePredicate slicePredicate = new SlicePredicate();
         slicePredicate.setSlice_range(sliceRange);
         client.set_keyspace(keyspace);
-        List<KeySlice> keySlices =
-            client.get_range_slices(columnParent, slicePredicate, keyRange, ConsistencyLevel.ONE);
+
+        List<KeySlice> keySlices = null;
+        try {
+            keySlices = client.get_range_slices(columnParent, slicePredicate, keyRange, ConsistencyLevel.ONE);
+        } catch (UnavailableException e) {
+            return m;
+        }
+
         for (KeySlice keySlice : keySlices) {
             Key key = new Key(new String(keySlice.getKey()), new TreeMap<String, SColumn>(), new TreeMap<String, Cell>());
 

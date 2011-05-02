@@ -80,7 +80,6 @@ public class ColumnTreePanel extends JPanel {
     }
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-    private static final String COLUMN_FAMILY_TYPE = "Type";
     private static final String COLUMN_FAMILY_TYPE_SUPER = "Super";
 
     private Client client;
@@ -115,7 +114,7 @@ public class ColumnTreePanel extends JPanel {
     public void showRow(String keyspace, String columnFamily, String key) {
         try {
             Map<String, String> m = client.getColumnFamily(keyspace, columnFamily);
-            if (m.get(COLUMN_FAMILY_TYPE).equals(COLUMN_FAMILY_TYPE_SUPER)) {
+            if (m.get(CfDef._Fields.COLUMN_TYPE.name()).equals(COLUMN_FAMILY_TYPE_SUPER)) {
                 client.setSuperColumn(true);
                 superColumn = true;
             } else {
