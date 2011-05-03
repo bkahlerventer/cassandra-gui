@@ -1,0 +1,4 @@
+0.7.0
+ * add Create keyspace and remove keyspace
+ * add Create column family, remoce column family and truncate column family
+ 
