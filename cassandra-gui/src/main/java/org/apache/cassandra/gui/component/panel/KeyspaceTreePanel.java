@@ -57,6 +57,7 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
         public static final int OPERATION_REMOVE_COLUMN_FAMILY = 8;
         public static final int OPERATION_TRUNCATE_COLUMN_FAMILY = 9;
         public static final int OPERATION_UPDATE_COLUMN_FAMILY = 10;
+        public static final int OPERATION_REFRESH_CLUSTER = 11;
 
         public static final int ROWS_1000 = 1000;
 
@@ -154,6 +155,9 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                     }
                 }
 
+                break;
+            case OPERATION_REFRESH_CLUSTER:
+                refreshTree();
                 break;
             case OPERAITON_CREATE_COLUMN_FAMILY:
                 if (lastSelectedKeysapce == null) {
@@ -326,6 +330,7 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                 switch (path.getPathCount()) {
                 case TREE_CLUSTER:
                     popup.add(new PopupAction("create keysapce", PopupAction.OPERATION_CREATE_KEYSPACE, node));
+                    popup.add(new PopupAction("refresh", PopupAction.OPERATION_REFRESH_CLUSTER, node));
                     popup.show(e.getComponent(), e.getX(), e.getY());
                     break;
                 case TREE_KEYSPACE:
@@ -333,6 +338,7 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                     popup.add(new PopupAction("properties", PopupAction.OPERATION_UPDATE_KEYSPACE, node));
                     popup.add(new PopupAction("remove", PopupAction.OPERATION_REMOVE_KEYSPACE, node));
                     popup.add(new PopupAction("create column family", PopupAction.OPERAITON_CREATE_COLUMN_FAMILY, node));
+                    popup.add(new PopupAction("refresh", PopupAction.OPERATION_REFRESH_CLUSTER, node));
                     popup.show(e.getComponent(), e.getX(), e.getY());
                     break;
                 case TREE_COLUMN_FAMILY:
@@ -425,6 +431,42 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
         scrollPane.getViewport().setView(tree);
         add(scrollPane);
         repaint();
+    }
+
+    public void refreshTree() {
+        try {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) treeModel.getRoot();
+            node.removeAllChildren();
+
+            List<KsDef> ks = null;
+            try {
+                ks = new ArrayList<KsDef>(client.getKeyspaces());
+            } catch (InvalidRequestException e) {
+                e.printStackTrace();
+            }
+            Collections.sort(ks);
+            for (KsDef keyspace : ks) {
+                DefaultMutableTreeNode keyspaceNode = new DefaultMutableTreeNode(keyspace.getName());
+                node.add(keyspaceNode);
+                try {
+                    Set<String> cfs = client.getColumnFamilys(keyspace.getName());
+                    for (String columnFamily : cfs) {
+                        keyspaceNode.add(new DefaultMutableTreeNode(columnFamily));
+                    }
+                } catch (NotFoundException e) {
+                    JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
+                    e.printStackTrace();
+                } catch (InvalidRequestException invReq) {
+                    JOptionPane.showMessageDialog(null, "error: " + invReq.getMessage());
+                    invReq.printStackTrace();
+                }
+            }
+            treeModel.reload();
+        } catch (TException e) {
+            JOptionPane.showMessageDialog(null, "error: " + e.getMessage());
+            e.printStackTrace();
+            return;
+        }
     }
 
     @Override
