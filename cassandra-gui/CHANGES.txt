@@ -1,3 +1,6 @@
+0.8.0-beta1
+ * supports 0.8.
+
 0.7.1
  * fix Ability to refresh list of keyspaces (Issue 13)
 
