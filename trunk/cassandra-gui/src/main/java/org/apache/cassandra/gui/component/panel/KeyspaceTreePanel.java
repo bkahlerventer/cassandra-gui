@@ -8,6 +8,7 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.swing.AbstractAction;
@@ -107,8 +108,9 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                     return;
                 }
 
+                Map<String, String> strageOptions = ksDef.getStrategy_options();
                 ksd = new KeyspaceDialog(lastSelectedKeysapce,
-                                         ksDef.getReplication_factor(),
+                                         Integer.valueOf(strageOptions.get("replication_factor")),
                                          ksDef.getStrategy_class(),
                                          ksDef.getStrategy_options());
                 ksd.setVisible(true);

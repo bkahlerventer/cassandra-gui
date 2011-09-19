@@ -5,7 +5,7 @@
   <groupId>org.apache.cassandra</groupId>
   <artifactId>cassandra-gui</artifactId>
   <packaging>jar</packaging>
-  <version>0.7.0</version>
+  <version>0.8.0</version>
   <name>cassandra-gui</name>
   <url>http://maven.apache.org</url>
 
@@ -116,14 +116,28 @@
       <groupId>org.apache.thrift</groupId>
       <artifactId>libthrift</artifactId>
       <scope>system</scope>
-      <systemPath>${basedir}/lib/libthrift-0.5.jar</systemPath>
+      <systemPath>${basedir}/lib/libthrift-0.6.jar</systemPath>
       <version>0.5</version>
     </dependency>
     <dependency>
       <groupId>org.apache.cassandra</groupId>
       <artifactId>cassandra</artifactId>
       <scope>system</scope>
-      <systemPath>${basedir}/lib/apache-cassandra-0.7.5.jar</systemPath>
+      <systemPath>${basedir}/lib/apache-cassandra-0.8.5.jar</systemPath>
+      <version>0.7.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.cassandra</groupId>
+      <artifactId>cassandra-thrift</artifactId>
+      <scope>system</scope>
+      <systemPath>${basedir}/lib/apache-cassandra-thrift-0.8.5.jar</systemPath>
+      <version>0.7.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.cassandra</groupId>
+      <artifactId>cassandra-cql</artifactId>
+      <scope>system</scope>
+      <systemPath>${basedir}/lib/apache-cassandra-cql-1.0.3.jar</systemPath>
       <version>0.7.0</version>
     </dependency>
   </dependencies>
