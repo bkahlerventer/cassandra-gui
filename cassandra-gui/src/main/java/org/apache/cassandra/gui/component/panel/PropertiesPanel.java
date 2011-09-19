@@ -209,7 +209,8 @@ public class PropertiesPanel extends JPanel {
             tableModel.setRowCount(0);
             KsDef kd = client.describeKeyspace(keyspace);
 
-            tableModel.addRow(new String[] {COLUMN_REPLICATION_FACTOR, String.valueOf(kd.getReplication_factor())});
+            Map<String, String> strageOptions = kd.getStrategy_options();
+            tableModel.addRow(new String[] {COLUMN_REPLICATION_FACTOR, strageOptions.get("replication_factor")});
             tableModel.addRow(new String[] {COLUMN_REPLICATION_STRATEGY, kd.getStrategy_class()});
             int n = client.getColumnFamilys(keyspace).size();
             tableModel.addRow(new String[] {COLUMN_NUMBER_OF_COLUMN_FAMILY, String.valueOf(n)});

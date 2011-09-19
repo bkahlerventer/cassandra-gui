@@ -5,8 +5,10 @@ import java.io.UnsupportedEncodingException;
 import java.lang.management.MemoryUsage;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.Map.Entry;
 
 import org.apache.cassandra.concurrent.IExecutorMBean;
+import org.apache.cassandra.concurrent.JMXEnabledThreadPoolExecutorMBean;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.node.NodeInfo;
 import org.apache.cassandra.node.RingNode;
@@ -33,7 +35,8 @@ import org.apache.thrift.transport.TTransportException;
 public class Client {
     public static final String DEFAULT_THRIFT_HOST = "localhost";
     public static final int DEFAULT_THRIFT_PORT = 9160;
-    public static final int DEFAULT_JMX_PORT = 8080;
+    public static final int DEFAULT_JMX_PORT = 7199;
+    private static final String UTF8 = "UTF8";
 
     public enum ColumnType {
         SUPER("Super"),
@@ -114,7 +117,8 @@ public class Client {
         return client.describe_snitch();
     }
 
-    public Map<String,List<String>> describeSchemaVersions() throws InvalidRequestException, TException {
+    public Map<String,List<String>> describeSchemaVersions()
+            throws InvalidRequestException, TException {
         return client.describe_schema_versions();
     }
 
@@ -128,6 +132,7 @@ public class Client {
         return client.describe_ring(keyspace);
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public RingNode listRing() {
         RingNode r = new RingNode();
         r.setRangeMap(probe.getTokenToEndpointMap());
@@ -162,9 +167,9 @@ public class Client {
         List<Tpstats> l = new ArrayList<Tpstats>();
 
         NodeProbe p = new NodeProbe(endpoint, jmxPort);
-        Iterator<Map.Entry<String, IExecutorMBean>> threads = p.getThreadPoolMBeanProxies();
+        Iterator<Entry<String, JMXEnabledThreadPoolExecutorMBean>> threads = p.getThreadPoolMBeanProxies();
         for (;threads.hasNext();) {
-            Map.Entry<String, IExecutorMBean> thread = threads.next();
+            Entry<String, JMXEnabledThreadPoolExecutorMBean> thread = threads.next();
 
             Tpstats tp = new Tpstats();
             tp.setPoolName(thread.getKey());
@@ -179,22 +184,30 @@ public class Client {
         return l;
     }
 
-    public List<KsDef> getKeyspaces() throws TException, InvalidRequestException {
+    public List<KsDef> getKeyspaces()
+            throws TException, InvalidRequestException {
         return client.describe_keyspaces();
     }
 
-    public KsDef describeKeyspace(String keyspaceName) throws NotFoundException, InvalidRequestException, TException {
+    public KsDef describeKeyspace(String keyspaceName)
+            throws NotFoundException, InvalidRequestException, TException {
         return client.describe_keyspace(keyspaceName);
     }
 
     public void addKeyspace(String keyspaceName,
                             String strategy,
                             Map<String, String> strategyOptions,
-                            int replicationFactgor) throws InvalidRequestException, TException {
-        KsDef ksDef = new KsDef(keyspaceName, strategy, replicationFactgor, new LinkedList<CfDef>());
+                            int replicationFactgor)
+            throws InvalidRequestException, TException, SchemaDisagreementException {
+        KsDef ksDef = new KsDef();
+        ksDef.setName(keyspaceName);
+        ksDef.setStrategy_class(strategy);
+        ksDef.setCf_defs(new LinkedList<CfDef>());
         if (strategyOptions != null) {
-            ksDef.setStrategy_options(strategyOptions);
+            strategyOptions = new HashMap<String, String>();
         }
+        strategyOptions.put("replication_factor", String.valueOf(replicationFactgor));
+        ksDef.setStrategy_options(strategyOptions);
 
         client.system_add_keyspace(ksDef);
     }
@@ -202,21 +215,29 @@ public class Client {
     public void updateKeyspace(String keyspaceName,
                                String strategy,
                                Map<String, String> strategyOptions,
-                               int replicationFactgor) throws InvalidRequestException, TException {
-        KsDef ksDef = new KsDef(keyspaceName, strategy, replicationFactgor, new LinkedList<CfDef>());
+                               int replicationFactgor)
+            throws InvalidRequestException, TException, SchemaDisagreementException {
+        KsDef ksDef = new KsDef();
+        ksDef.setName(keyspaceName);
+        ksDef.setStrategy_class(strategy);
+        ksDef.setCf_defs(new LinkedList<CfDef>());
         if (strategyOptions != null) {
-            ksDef.setStrategy_options(strategyOptions);
+            strategyOptions = new HashMap<String, String>();
         }
+        strategyOptions.put("replication_factor", String.valueOf(replicationFactgor));
+        ksDef.setStrategy_options(strategyOptions);
 
         client.system_update_keyspace(ksDef);
     }
 
-    public void dropKeyspace(String keyspaceName) throws InvalidRequestException, TException {
+    public void dropKeyspace(String keyspaceName)
+            throws InvalidRequestException, SchemaDisagreementException, TException {
         client.system_drop_keyspace(keyspaceName);
     }
 
     public void addColumnFamily(String keyspaceName,
-                                ColumnFamily cf) throws InvalidRequestException, TException {
+                                ColumnFamily cf)
+            throws InvalidRequestException, TException, SchemaDisagreementException {
         this.keyspace = keyspaceName;
         CfDef cfDef = new CfDef(keyspaceName, cf.getColumnFamilyName());
         cfDef.setColumn_type(cf.getColumnType());
@@ -309,7 +330,8 @@ public class Client {
     }
 
     public void updateColumnFamily(String keyspaceName,
-                                   ColumnFamily cf) throws InvalidRequestException, TException {
+                                   ColumnFamily cf)
+            throws InvalidRequestException, TException, SchemaDisagreementException {
         this.keyspace = keyspaceName;
         CfDef cfDef = new CfDef(keyspaceName, cf.getColumnFamilyName());
         cfDef.setId(cf.getId());
@@ -402,7 +424,8 @@ public class Client {
         client.system_update_column_family(cfDef);
     }
 
-    public void dropColumnFamily(String keyspaceName, String columnFamilyName) throws InvalidRequestException, TException {
+    public void dropColumnFamily(String keyspaceName, String columnFamilyName)
+            throws InvalidRequestException, TException, SchemaDisagreementException {
         this.keyspace = keyspaceName;
         client.set_keyspace(keyspaceName);
         client.system_drop_column_family(columnFamilyName);
@@ -482,7 +505,7 @@ public class Client {
                 cf.setMaxCompactionThreshold(String.valueOf(cd.getMax_compaction_threshold()));
                 for (ColumnDef cdef : cd.getColumn_metadata()) {
                     ColumnFamilyMetaData cfmd = new ColumnFamilyMetaData();
-                    cfmd.setColumnName(new String(cdef.getName(), "UTF8"));
+                    cfmd.setColumnName(new String(cdef.getName(), UTF8));
                     cfmd.setValiDationClass(cdef.getValidation_class());
                     cfmd.setIndexType(cdef.getIndex_type());
                     cfmd.setIndexName(cdef.getIndex_name());
@@ -537,7 +560,7 @@ public class Client {
                              String superColumn,
                              String column,
                              String value)
-            throws InvalidRequestException, UnavailableException, TimedOutException, TException {
+            throws InvalidRequestException, UnavailableException, TimedOutException, TException, UnsupportedEncodingException {
         this.keyspace = keyspace;
         this.columnFamily = columnFamily;
 
@@ -550,7 +573,10 @@ public class Client {
         }
 
         long timestamp = System.currentTimeMillis() * 1000;
-        Column col = new Column(ByteBuffer.wrap(key.getBytes()), ByteBuffer.wrap(value.getBytes()), timestamp);
+        Column col = new Column();
+        col.setName(column.getBytes(UTF8));
+        col.setValue(value.getBytes(UTF8));
+        col.setTimestamp(timestamp);
 
         client.set_keyspace(keyspace);
         client.insert(ByteBuffer.wrap(key.getBytes()), parent, col, ConsistencyLevel.ONE);
@@ -638,11 +664,11 @@ public class Client {
             k.setSuperColumn(column.isSetSuper_column());
             if (column.isSetSuper_column()) {
                 SuperColumn scol = column.getSuper_column();
-                SColumn s = new SColumn(k, new String(scol.getName(), "UTF8"), new TreeMap<String, Cell>());
+                SColumn s = new SColumn(k, new String(scol.getName(), UTF8), new TreeMap<String, Cell>());
                 for (Column col : scol.getColumns()) {
                     Cell c = new Cell(s,
-                                      new String(col.getName(), "UTF8"),
-                                      new String(col.getValue(), "UTF8"),
+                                      new String(col.getName(), UTF8),
+                                      new String(col.getValue(), UTF8),
                                       new Date(col.getTimestamp() / 1000));
                     s.getCells().put(c.getName(), c);
                 }
@@ -651,8 +677,8 @@ public class Client {
             } else {
                 Column col = column.getColumn();
                 Cell c = new Cell(k,
-                                  new String(col.getName(), "UTF8"),
-                                  new String(col.getValue(), "UTF8"),
+                                  new String(col.getName(), UTF8),
+                                  new String(col.getValue(), UTF8),
                                   new Date(col.getTimestamp() / 1000));
                 k.getCells().put(c.getName(), c);
             }
@@ -698,11 +724,11 @@ public class Client {
                 key.setSuperColumn(column.isSetSuper_column());
                 if (column.isSetSuper_column()) {
                     SuperColumn scol = column.getSuper_column();
-                    SColumn s = new SColumn(key, new String(scol.getName(), "UTF8"), new TreeMap<String, Cell>());
+                    SColumn s = new SColumn(key, new String(scol.getName(), UTF8), new TreeMap<String, Cell>());
                     for (Column col : scol.getColumns()) {
                         Cell c = new Cell(s,
-                                          new String(col.getName(), "UTF8"),
-                                          new String(col.getValue(), "UTF8"),
+                                          new String(col.getName(), UTF8),
+                                          new String(col.getValue(), UTF8),
                                           new Date(col.getTimestamp() / 1000));
                         s.getCells().put(c.getName(), c);
                     }
@@ -711,8 +737,8 @@ public class Client {
                 } else {
                     Column col = column.getColumn();
                     Cell c = new Cell(key,
-                                      new String(col.getName(), "UTF8"),
-                                      new String(col.getValue(), "UTF8"),
+                                      new String(col.getName(), UTF8),
+                                      new String(col.getValue(), UTF8),
                                       new Date(col.getTimestamp() / 1000));
                     key.getCells().put(c.getName(), c);
                 }

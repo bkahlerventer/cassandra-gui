@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.apache.cassandra.dht.Token;
 
+@SuppressWarnings("rawtypes")
 public class RingNode implements Serializable {
     private static final long serialVersionUID = 8351368757758010586L;
 
@@ -23,10 +24,10 @@ public class RingNode implements Serializable {
     }
 
     /**
-     * @param rangeMap the rangeMap to set
+     * @param map the rangeMap to set
      */
-    public void setRangeMap(Map<Token, String> rangeMap) {
-        this.rangeMap = rangeMap;
+    public void setRangeMap(Map<Token, String> map) {
+        this.rangeMap = map;
     }
 
     /**

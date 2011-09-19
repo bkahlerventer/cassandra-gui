@@ -12,7 +12,6 @@ import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
@@ -23,7 +22,6 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 
 import org.apache.cassandra.client.Client;
-import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.node.NodeInfo;
 import org.apache.cassandra.node.RingNode;
@@ -89,6 +87,7 @@ public class RingDialog extends JDialog {
         setModal(true);
     }
 
+    @SuppressWarnings("rawtypes")
     private VisualizationViewer setupControls() {
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         final RingNode ringNode = client.listRing();
@@ -109,10 +108,7 @@ public class RingDialog extends JDialog {
         final Vertex[] vertices = new Vertex[rangeMap.size()];
 
         int count = 0;
-        for (Token range : ranges) {
-//            List<String> endpoints = rangeMap.get(range);
-            String endpoints = rangeMap.get(range);
-//            String primaryEndpoint = endpoints.get(0);
+        for (Token<String> range : ranges) {
             String primaryEndpoint = rangeMap.get(range);
             String load = loadMap.containsKey(primaryEndpoint) ? loadMap.get(primaryEndpoint) : "?";
             String label = "<html>" +
