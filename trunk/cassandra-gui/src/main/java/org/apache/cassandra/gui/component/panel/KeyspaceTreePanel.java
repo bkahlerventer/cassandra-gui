@@ -59,6 +59,7 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
         public static final int OPERATION_TRUNCATE_COLUMN_FAMILY = 9;
         public static final int OPERATION_UPDATE_COLUMN_FAMILY = 10;
         public static final int OPERATION_REFRESH_CLUSTER = 11;
+        public static final int OPERAITON_CQL = 12;
 
         public static final int ROWS_1000 = 1000;
 
@@ -312,6 +313,8 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                                        lastSelectedColumnFamily,
                                        kd.getkey());
                 break;
+            case OPERAITON_CQL:
+                break;
             }
         }
     }
@@ -352,6 +355,7 @@ public class KeyspaceTreePanel extends JPanel implements TreeSelectionListener {
                     popup.add(new PopupAction("show 1000 rows", PopupAction.OPERATION_ROWS, node));
                     popup.add(new PopupAction("key range rows", PopupAction.OPERATION_KEYRANGE, node));
                     popup.add(new PopupAction("get key", PopupAction.OPERATION_KEY, node));
+                    popup.add(new PopupAction("CQL", PopupAction.OPERAITON_CQL, node));
                     popup.add(new PopupAction("properties", PopupAction.OPERATION_UPDATE_COLUMN_FAMILY, node));
                     popup.add(new PopupAction("truncate column family", PopupAction.OPERATION_TRUNCATE_COLUMN_FAMILY, node));
                     popup.add(new PopupAction("remove column family", PopupAction.OPERATION_REMOVE_COLUMN_FAMILY, node));

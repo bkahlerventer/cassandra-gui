@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.management.MemoryUsage;
 import java.nio.ByteBuffer;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -38,6 +42,8 @@ public class Client {
     public static final int DEFAULT_JMX_PORT = 7199;
     private static final String UTF8 = "UTF8";
 
+    private static final String CQL_URL = "jdbc:cassandra:/@%s:%d/%s";
+
     public enum ColumnType {
         SUPER("Super"),
         STANDARD("Standard");
@@ -58,7 +64,11 @@ public class Client {
     private Cassandra.Client client;
     private NodeProbe probe;
 
+    private Connection db;
+    private Statement st;
+
     private boolean connected = false;
+    private boolean cqlConnected = false;
     private String host;
     private int thriftPort;
     private int jmxPort;
@@ -101,6 +111,23 @@ public class Client {
         }
     }
 
+    public void cqlConnect(String keyspace) throws ClassNotFoundException, SQLException {
+        if (!cqlConnected) {
+            Class.forName("org.apache.cassandra.cql.jdbc.CassandraDriver");
+            db = DriverManager.getConnection(String.format(CQL_URL, host, thriftPort, keyspace), new Properties());
+            st = db.createStatement();
+            cqlConnected = true;
+        }
+    }
+
+    public void cqlDisconnect() throws SQLException {
+        if (cqlConnected) {
+            st.close();
+            db.close();
+            cqlConnected = false;
+        }
+    }
+
     public boolean isConnected() {
         return connected;
     }
@@ -117,7 +144,7 @@ public class Client {
         return client.describe_snitch();
     }
 
-    public Map<String,List<String>> describeSchemaVersions()
+    public Map<String, List<String>> describeSchemaVersions()
             throws InvalidRequestException, TException {
         return client.describe_schema_versions();
     }
